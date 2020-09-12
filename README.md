@@ -1,5 +1,7 @@
 # QueslarQQOL
-Shitty little plugin. Converts stuff from actions to time. Maybe will do something better later
+Shitty little plugin. Converts stuff from actions to time. Maybe will do something better later.
+
+Donate some relics to FiammaTheGreat if you like it i guess
 
 # Whats this?
 Adds more info to left sidebar and enchanting\crafting bar, saying how much time is left for idle time, crafting progress or next level. In munites and hours, not actions! Yay, readable stuff
