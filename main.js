@@ -34,7 +34,7 @@ class FTGMod {
    if (document.querySelector('.h5.mt-1')) {
      let txt = document.querySelector('.h5.mt-1').innerHTML;
      let actionVal = parseInt(txt.split(' / ')[0]);
-     txt =  this.ActionsToTime(actionVal);
+     txt = this.ActionsToTime(actionVal);
      document.getElementById('FTG_idle_timer').innerHTML=('Idle Time Remaining: ' + txt);
   }
 
