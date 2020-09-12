@@ -1,6 +1,6 @@
 class FTGMod {
  constructor() {
-   let ver = '0.05';
+   let ver = '0.06';
    //OBSERVERS
    var modbody = this;
    this.newActionObserver = new MutationObserver(function(mutations) {
@@ -19,20 +19,30 @@ class FTGMod {
                                                    //.clickable onclick?
 
    //NEW DOM
+   var csselem = document.createElement("link");
+   csselem.setAttribute("rel", "stylesheet");
+   csselem.setAttribute("type", "text/css");
+   csselem.setAttribute("href", "https://gitcdn.link/repo/CountTo25/QueslarQQOL/master/cssfix.css");
+   document.getElementsByTagName("head")[0].appendChild(csselem);
+
    let QQOLholder = document.createElement('div');
    QQOLholder.id = 'QQOL_holder';
    document.getElementById('profile-next-level').parentNode.insertBefore(QQOLholder,document.getElementById('profile-next-level').nextSibling)
+   let QQOLinfo = document.createElement('div');
+   QQOLinfo.style.marginTop = '10px';
+   QQOLinfo.id='QQOL_info';
+   QQOLinfo.innerHTML = 'QQOL v'+ver;
    let timetoleveluptooltip = document.createElement('div');
    timetoleveluptooltip.id = 'QQOL_time_to_levelup';
    let idletimeremainingtooltip = document.createElement('div');
    idletimeremainingtooltip.id='QQOL_remaining_time';
+   document.getElementById('QQOL_holder').appendChild(QQOLinfo);
    document.getElementById('QQOL_holder').appendChild(timetoleveluptooltip);
    document.getElementById('QQOL_holder').appendChild(idletimeremainingtooltip);
 
-
    //FINISH
    this.HookOnAction(() => {modbody.Update()}, true);
-   console.log('loaded Quality of Quality of Life mod '+this.ver+'. Have a nice day!');
+   console.log('loaded Quality of Quality of Life mod v'+ver+'. Have a nice day!');
  }
  HookOnAction(func, exec=false) {
    if (exec) func();
@@ -43,10 +53,11 @@ class FTGMod {
    this.TimeRemaining();
    this.TimeToLevelUp();
    this.TimeToCraft();
+   this.TrySearchProviderUI();
  }
 
  GetRemainingActions() {
-   return parseInt(document.title.replace(/\D/g,''));
+   return parseInt(parseInt(document.title.split(' - ')[0]));
  }
 
  OnNewAction() {
@@ -68,6 +79,9 @@ class FTGMod {
  TimeRemaining() {
    let actionsRemaining = this.GetRemainingActions();
    let txt ='Idle time remaining: '+this.ActionsToTime(actionsRemaining);
+   if (actionsRemaining<0) {
+     txt ="<span style='color: red'>Restart your actions!</span>";
+   }
    document.getElementById('QQOL_remaining_time').innerHTML=txt;
  }
 
@@ -92,7 +106,38 @@ class FTGMod {
 
  }
 
+ TrySearchProviderUI() {
+   if (document.querySelector('.cdk-column-username.mat-column-username')&&!(document.getElementById('QQOL_service_search'))) {
+     let serviceSearchBar = document.createElement('input');
+     serviceSearchBar.id = 'QQOL_service_search';
+     serviceSearchBar.placeholder='Find service provider by name';
+     serviceSearchBar.classList.add('QQOL_searchbar');
+     serviceSearchBar.addEventListener('input', ()=>{this.FindProvider()});
+     let insertBefore = document.querySelector('.mat-table.cdk-table.mat-elevation-z8');
+     insertBefore.parentNode.insertBefore(serviceSearchBar,insertBefore)
+   }
+   //on services tab
+ }
+
+ FindProvider() {
+
+   console.log('findprovider!');
+   let sTerm = document.getElementById('QQOL_service_search').value.toLowerCase();
+   console.log('sTerm');
+   let users = document.querySelectorAll('td.cdk-column-username.mat-column-username > div');
+   console.log(users.length+'l');
+   for (let i=0; i<users.length; i++) {
+     if (users[i].innerHTML.toLowerCase().includes(sTerm)) {
+       console.log('')
+       users[i].parentNode.parentNode.removeAttribute('style');
+     } else {
+       users[i].parentNode.parentNode.style.display='none'
+     }
+   }
+ }
+
 ActionsToTime(actions) {
+   if (actions<0) return '00:00';
    let minval = Math.floor(actions/10);
    let hourval = Math.floor(minval/60);
    let remMinutes = minval-hourval*60;
