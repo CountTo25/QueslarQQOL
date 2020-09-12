@@ -1,0 +1,17 @@
+.mat-focus-indicator.reset-button.mat-raised-button.mat-button-base {
+    height: auto;
+    border-radius: 10px 0px 0px 0px;
+    padding: 1px;
+}
+
+.mat-tooltip-trigger {
+    font-size: 14px !important;
+}
+
+.mat-ink-bar {
+    background-color: var(--main-color) !important;
+}
+
+.mat-column-username {
+    padding-right: 5px !important;
+}
