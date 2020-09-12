@@ -9,6 +9,11 @@ javascript:(function (){document.getElementsByTagName('head')[0].appendChild(doc
 
 Click on it while in game
 
+# Hooks
+OnAction - executes each time an action happens
+```
+QQOL.HookOnAction(() => {console.log('wow')})
+```
 
 # TODO/Whats next
 Find service provider by name
