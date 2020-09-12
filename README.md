@@ -17,6 +17,8 @@ OR
 
 Use greasemonkey: https://greasyfork.org/scripts/411266-qqol
 # Hooks
+They dont work if you run on greasemonkey :( I'll figure smth out later
+
 OnAction - executes each time an action happens
 ```
 QQOL.HookOnAction(() => {console.log('wow')})
