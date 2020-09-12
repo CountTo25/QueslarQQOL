@@ -13,7 +13,7 @@ javascript:(function (){document.getElementsByTagName('head')[0].appendChild(doc
 ```
 OR
 
-Use greasemonkey or something to load it
+Use greasemonkey: https://greasyfork.org/scripts/411266-qqol
 # Hooks
 OnAction - executes each time an action happens
 ```
