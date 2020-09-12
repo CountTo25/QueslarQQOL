@@ -111,7 +111,7 @@ class FTGMod {
      let serviceSearchBar = document.createElement('input');
      serviceSearchBar.id = 'QQOL_service_search';
      serviceSearchBar.placeholder='Find service provider by name';
-     serviceSearchBar.classList.add('QQOL_searchbar');
+     serviceSearchBar.classList.add('QQOL-searchbar');
      serviceSearchBar.addEventListener('input', ()=>{this.FindProvider()});
      let insertBefore = document.querySelector('.mat-table.cdk-table.mat-elevation-z8');
      insertBefore.parentNode.insertBefore(serviceSearchBar,insertBefore)
