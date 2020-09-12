@@ -1,6 +1,6 @@
 class FTGMod {
  constructor() {
-   let ver = '0.06';
+   let ver = '0.07';
    //OBSERVERS
    var modbody = this;
    this.newActionObserver = new MutationObserver(function(mutations) {
@@ -40,8 +40,13 @@ class FTGMod {
    document.getElementById('QQOL_holder').appendChild(timetoleveluptooltip);
    document.getElementById('QQOL_holder').appendChild(idletimeremainingtooltip);
 
+   //DECLARE SHIT
+   this.secondMod = 6;
+   this.secondInterval;
+
    //FINISH
    this.HookOnAction(() => {modbody.Update()}, true);
+   this.HookOnAction(()=> {modbody.InitSecondsTimer()});
    console.log('loaded Quality of Quality of Life mod v'+ver+'. Have a nice day!');
  }
  HookOnAction(func, exec=false) {
@@ -78,7 +83,7 @@ class FTGMod {
 
  TimeRemaining() {
    let actionsRemaining = this.GetRemainingActions();
-   let txt ='Idle time remaining: '+this.ActionsToTime(actionsRemaining);
+   let txt ='Idle time remaining: '+this.ActionsToTime(actionsRemaining)+'.'+this.GetRemainingActions()*6%60;
    if (actionsRemaining<0) {
      txt ="<span style='color: red'>Restart your actions!</span>";
    }
@@ -94,14 +99,14 @@ class FTGMod {
       document.querySelector('.progress-bar-text').appendChild(TTCelement);
      }
      let actionVal = parseInt(txt.split(' / ')[1].split(' ')[0]) - parseInt(txt.split(' / ')[0]);
-     document.getElementById('FTG_time_to_craft').innerHTML = '('+this.ActionsToTime(actionVal)+' remaining)';
+     document.getElementById('FTG_time_to_craft').innerHTML = '('+this.ActionsToTime(actionVal)+'.'+actionVal*6%60+' remaining)';
    }
  }
 
  TimeToLevelUp() {
    let txt = document.getElementById('profile-next-level').innerHTML;
    let actionVal = parseInt(txt.replace(/\D/g,''));
-   txt='Time to next level: '+this.ActionsToTime(actionVal);
+   txt='Time to next level: '+this.ActionsToTime(actionVal)+'.'+actionVal*6%60;
    document.getElementById('QQOL_time_to_levelup').innerHTML = txt;
 
  }
@@ -140,8 +145,22 @@ ActionsToTime(actions) {
    if (actions<0) return '00:00';
    let minval = Math.floor(actions/10);
    let hourval = Math.floor(minval/60);
-   let remMinutes = minval-hourval*60;
+   let remMinutes = minval%60;
+   let remSeconds = actions/10
    return hourval+':'+(remMinutes<10?('0'+remMinutes):(remMinutes));
+ }
+
+ InitSecondsTimer() {
+   if (this.GetRemainingActions<0) return;
+   this.secondMod = 7;
+   this.secondInterval = setInterval(() => {
+     if (this.secondMod>0) {
+       this.secondMod--;
+     } else {
+       this.secondMod = 6;
+       clearInterval(this.secondInterval);
+     }
+   }, 1000)
  }
 }
 
