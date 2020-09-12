@@ -6,7 +6,7 @@ class FTGMod {
 
    this.update = setInterval(this.Update.bind(this),1000);
    this.Update();
-   console.log('loaded Quality of Quality of Life mod v0.01. Have a nice day!');
+   console.log('loaded Quality of Quality of Life mod v0.03. Have a nice day!');
 
 
 
@@ -15,6 +15,7 @@ class FTGMod {
  Update() {
    this.TimeRemaining();
    this.TimeToLevelUp();
+   this.TimeToCraft();
  }
 
  CreateTimerWindow() {
@@ -37,6 +38,19 @@ class FTGMod {
      txt = this.ActionsToTime(actionVal);
      document.getElementById('FTG_idle_timer').innerHTML=('Idle Time Remaining: ' + txt);
   }
+ }
+
+ TimeToCraft() {
+   if (document.querySelector('.progress-bar-text')) {
+     let txt = document.querySelector('.progress-bar-text').innerHTML;
+     if (!document.getElementById('FTG_time_to_craft')) {
+      let TTCelement = document.createElement('span');
+      TTCelement.id = 'FTG_time_to_craft';
+      document.querySelector('.progress-bar-text').appendChild(TTCelement);
+     }
+     let actionVal = parseInt(txt.split(' / ')[0]);
+     document.getElementById('FTG_time_to_craft').innerHTML = '('+this.ActionsToTime(actionVal)+' remaining)';
+   }
  }
 
  TimeToLevelUp() {
