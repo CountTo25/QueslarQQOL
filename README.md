@@ -1,0 +1,2 @@
+# QueslarQQOL
+Shitty little plugin
