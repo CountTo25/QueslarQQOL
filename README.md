@@ -4,7 +4,7 @@ Shitty little plugin. Converts stuff from actions to time. Maybe will do somethi
 # Get it
 Create the bookmark containing following code, save it, click it when you're on Queslar tab
 ```
-javascript:(function (){document.getElementsByTagName('head')[0].appendChild(document.createElement('script')).src='https://cdn.jsdelivr.net/gh/countto25/queslarQQOL@latest/main.js';}());
+javascript:(function (){document.getElementsByTagName('head')[0].appendChild(document.createElement('script')).src='https://raw.githubusercontent.com/CountTo25/QueslarQQOL/master/main.js';}());
 ```
 OR
 
