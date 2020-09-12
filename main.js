@@ -6,7 +6,7 @@ class FTGMod {
 
    this.update = setInterval(this.Update.bind(this),1000);
    this.Update();
-   console.log('loaded Quality of Quality of Life mod v0.02. Have a nice day!');
+   console.log('loaded Quality of Quality of Life mod v0.01. Have a nice day!');
 
 
 
@@ -18,11 +18,13 @@ class FTGMod {
  }
 
  CreateTimerWindow() {
-   let timerelement = document.createElement('span');
-   timerelement.id = 'FTG_idle_timer';
-   timerelement.classList.add('h5');
-   timerelement.setAttribute('style','margin-top: .25rem !important;');
-   document.querySelector('.h5.mt-1').parentNode.insertBefore(timerelement,document.querySelector('.h5.mt-1'))
+   if (document.querySelector('.h5.mt-1')) {
+     let timerelement = document.createElement('span');
+    timerelement.id = 'FTG_idle_timer';
+    timerelement.classList.add('h5');
+    timerelement.setAttribute('style','margin-top: .25rem !important;');
+    document.querySelector('.h5.mt-1').parentNode.insertBefore(timerelement,document.querySelector('.h5.mt-1'))
+  }
  }
 
  TimeRemaining() {
