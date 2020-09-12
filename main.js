@@ -41,12 +41,9 @@ class FTGMod {
    document.getElementById('QQOL_holder').appendChild(idletimeremainingtooltip);
 
    //DECLARE SHIT
-   this.secondMod = 6;
-   this.secondInterval;
 
    //FINISH
    this.HookOnAction(() => {modbody.Update()}, true);
-   this.HookOnAction(()=> {modbody.InitSecondsTimer()});
    console.log('loaded Quality of Quality of Life mod v'+ver+'. Have a nice day!');
  }
  HookOnAction(func, exec=false) {
@@ -148,19 +145,6 @@ ActionsToTime(actions) {
    let remMinutes = minval%60;
    let remSeconds = actions/10
    return hourval+':'+(remMinutes<10?('0'+remMinutes):(remMinutes));
- }
-
- InitSecondsTimer() {
-   if (this.GetRemainingActions<0) return;
-   this.secondMod = 7;
-   this.secondInterval = setInterval(() => {
-     if (this.secondMod>0) {
-       this.secondMod--;
-     } else {
-       this.secondMod = 6;
-       clearInterval(this.secondInterval);
-     }
-   }, 1000)
  }
 }
 
