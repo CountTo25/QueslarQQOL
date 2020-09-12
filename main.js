@@ -1,6 +1,17 @@
+// ==UserScript==
+// @name         QQOL
+// @namespace    http://tampermonkey.net/
+// @version      0.11
+// @description  try to take over the world!
+// @include https://www.queslar.com/*
+// @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
+// @grant        unsafeWindow
+// ==/UserScript==
+
+
 class FTGMod {
  constructor() {
-   let ver = '0.07';
+   let ver = '0.11';
    //OBSERVERS
    var modbody = this;
    this.newActionObserver = new MutationObserver(function(mutations) {
@@ -148,4 +159,10 @@ ActionsToTime(actions) {
  }
 }
 
-var QQOL = new FTGMod();
+//TY GREASEMONKEY
+var QQOL = null;
+var QQOLSetupInterval = setInterval(QQOLGMSetup, 100);
+function QQOLGMSetup() {
+  if (document.getElementById('profile-next-level')&&QQOL===null) {QQOL = new FTGMod(); clearInterval(QQOLSetupInterval); window.QQOL = QQOL;}
+}
+QQOLGMSetup();
