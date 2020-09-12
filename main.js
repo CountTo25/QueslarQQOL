@@ -1,9 +1,10 @@
 class FTGMod {
  constructor() {
+   var modbody = this;
+   document.onclick = function(){modbody.Update()} //im retarded, look up hooks later
    let timetoleveluptooltip = document.createElement('div');
    timetoleveluptooltip.id = 'FTG_time_to_levelup';
    document.getElementById('profile-next-level').parentNode.insertBefore(timetoleveluptooltip,document.getElementById('profile-next-level').nextSibling)
-
    this.update = setInterval(this.Update.bind(this),1000);
    this.Update();
    console.log('loaded Quality of Quality of Life mod v0.03. Have a nice day!');
