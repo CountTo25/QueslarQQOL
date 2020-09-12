@@ -48,7 +48,7 @@ class FTGMod {
       TTCelement.id = 'FTG_time_to_craft';
       document.querySelector('.progress-bar-text').appendChild(TTCelement);
      }
-     let actionVal = parseInt(txt.split(' / ')[0]);
+     let actionVal = parseInt(txt.split(' / ')[1].split(' ')[0]) - parseInt(txt.split(' / ')[0]);
      document.getElementById('FTG_time_to_craft').innerHTML = '('+this.ActionsToTime(actionVal)+' remaining)';
    }
  }
