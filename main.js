@@ -31,11 +31,13 @@ class FTGMod {
    if (!document.getElementById('FTG_idle_timer')) {
      this.CreateTimerWindow();
    }
-   let txt = document.querySelector('.h5.mt-1').innerHTML;
-   let turnval = parseInt(txt.split(' / ')[0]);
-   let minval = Math.floor(turnval/10);
-   let hourval = Math.floor(minval/60);
-   let remMinutes = minval-hourval*60;
+   if (document.querySelector('.h5.mt-1')) {
+     let txt = document.querySelector('.h5.mt-1').innerHTML;
+     let turnval = parseInt(txt.split(' / ')[0]);
+     let minval = Math.floor(turnval/10);
+     let hourval = Math.floor(minval/60);
+     let remMinutes = minval-hourval*60;
+  }
 
    txt = hourval+':'+(remMinutes<10?('0'+remMinutes):(remMinutes));
    document.getElementById('FTG_idle_timer').innerHTML=('Idle Time Remaining: ' + txt);
