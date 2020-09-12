@@ -37,9 +37,6 @@ class FTGMod {
      txt = this.ActionsToTime(actionVal);
      document.getElementById('FTG_idle_timer').innerHTML=('Idle Time Remaining: ' + txt);
   }
-
-
-   console.log(txt);
  }
 
  TimeToLevelUp() {
