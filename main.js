@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.11
+// @version      0.12
 // @description  try to take over the world!
-// @include https://www.queslar.com/*
+// @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
 // @grant        unsafeWindow
 // ==/UserScript==
@@ -11,7 +11,7 @@
 
 class FTGMod {
  constructor() {
-   let ver = '0.11';
+   let ver = '0.12';
    //OBSERVERS
    var modbody = this;
    this.newActionObserver = new MutationObserver(function(mutations) {
