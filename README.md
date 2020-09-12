@@ -1,6 +1,11 @@
 # QueslarQQOL
 Shitty little plugin. Converts stuff from actions to time. Maybe will do something better later
 
+# Whats this?
+Adds more info to left sidebar and enchanting\crafting bar, saying how much time is left for idle time, crafting progress or next level. In munites and hours, not actions! Yay, readable stuff
+
+Also, allows you to search for service providers on market
+
 # Get it
 Create the bookmark containing following code, save it, click it when you're on Queslar tab
 ```
@@ -16,4 +21,4 @@ QQOL.HookOnAction(() => {console.log('wow')})
 ```
 
 # TODO/Whats next
-Find service provider by name
+No idea
