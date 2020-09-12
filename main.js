@@ -1,22 +1,58 @@
 class FTGMod {
  constructor() {
+   let ver = '0.05';
+   //OBSERVERS
    var modbody = this;
+   this.newActionObserver = new MutationObserver(function(mutations) {
+     mutations.forEach(function(mutation) {
+          modbody.OnNewAction();
+     });
+    });
+    this.newActionObserver.observe(
+      document.querySelector('head > title'),
+      {subtree: true, characterData: true, childList: true }
+    );
+    this.onactionhooks = [];
+
+   //I SUCK AT JS
    document.onclick = function(){modbody.Update()} //im retarded, look up hooks later
+                                                   //.clickable onclick?
+
+   //NEW DOM
+   let QQOLholder = document.createElement('div');
+   QQOLholder.id = 'QQOL_holder';
+   document.getElementById('profile-next-level').parentNode.insertBefore(QQOLholder,document.getElementById('profile-next-level').nextSibling)
    let timetoleveluptooltip = document.createElement('div');
-   timetoleveluptooltip.id = 'FTG_time_to_levelup';
-   document.getElementById('profile-next-level').parentNode.insertBefore(timetoleveluptooltip,document.getElementById('profile-next-level').nextSibling)
-   this.update = setInterval(this.Update.bind(this),1000);
-   this.Update();
-   console.log('loaded Quality of Quality of Life mod v0.03. Have a nice day!');
+   timetoleveluptooltip.id = 'QQOL_time_to_levelup';
+   let idletimeremainingtooltip = document.createElement('div');
+   idletimeremainingtooltip.id='QQOL_remaining_time';
+   document.getElementById('QQOL_holder').appendChild(timetoleveluptooltip);
+   document.getElementById('QQOL_holder').appendChild(idletimeremainingtooltip);
 
 
-
+   //FINISH
+   this.HookOnAction(() => {modbody.Update()}, true);
+   console.log('loaded Quality of Quality of Life mod '+this.ver+'. Have a nice day!');
+ }
+ HookOnAction(func, exec=false) {
+   if (exec) func();
+   this.onactionhooks.push(func);
  }
 
  Update() {
    this.TimeRemaining();
    this.TimeToLevelUp();
    this.TimeToCraft();
+ }
+
+ GetRemainingActions() {
+   return parseInt(document.title.replace(/\D/g,''));
+ }
+
+ OnNewAction() {
+   for (let i=0; i<this.onactionhooks.length; i++) {
+     this.onactionhooks[i]();
+   }
  }
 
  CreateTimerWindow() {
@@ -30,15 +66,9 @@ class FTGMod {
  }
 
  TimeRemaining() {
-   if (!document.getElementById('FTG_idle_timer')) {
-     this.CreateTimerWindow();
-   }
-   if (document.querySelector('.h5.mt-1')) {
-     let txt = document.querySelector('.h5.mt-1').innerHTML;
-     let actionVal = parseInt(txt.split(' / ')[0]);
-     txt = this.ActionsToTime(actionVal);
-     document.getElementById('FTG_idle_timer').innerHTML=('Idle Time Remaining: ' + txt);
-  }
+   let actionsRemaining = this.GetRemainingActions();
+   let txt ='Idle time remaining: '+this.ActionsToTime(actionsRemaining);
+   document.getElementById('QQOL_remaining_time').innerHTML=txt;
  }
 
  TimeToCraft() {
@@ -57,8 +87,8 @@ class FTGMod {
  TimeToLevelUp() {
    let txt = document.getElementById('profile-next-level').innerHTML;
    let actionVal = parseInt(txt.replace(/\D/g,''));
-   txt='('+this.ActionsToTime(actionVal)+')';
-   document.getElementById('FTG_time_to_levelup').innerHTML = txt;
+   txt='Time to next level: '+this.ActionsToTime(actionVal);
+   document.getElementById('QQOL_time_to_levelup').innerHTML = txt;
 
  }
 
