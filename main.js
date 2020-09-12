@@ -22,7 +22,7 @@ class FTGMod {
    var csselem = document.createElement("link");
    csselem.setAttribute("rel", "stylesheet");
    csselem.setAttribute("type", "text/css");
-   csselem.setAttribute("href", "https://cdn.jsdelivr.net/gh/countto25/queslarQQOL/cssfix.css");
+   csselem.setAttribute("href", "https://cdn.jsdelivr.net/gh/countto25/queslarQQOL@latest/cssfix.css");
    document.getElementsByTagName("head")[0].appendChild(csselem);
 
    let QQOLholder = document.createElement('div');
