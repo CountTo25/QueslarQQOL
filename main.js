@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.23
+// @version      0.24
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -13,7 +13,7 @@
 
 class FTGMod {
  constructor() {
-   let ver = '0.23';
+   let ver = '0.24';
    //OBSERVERS
    var modbody = this;
    this.newActionObserver = new MutationObserver(function(mutations) {
@@ -106,7 +106,7 @@ class FTGMod {
 
    //FINISH
    this.HookOnAction(() => {modbody.Update()}, true);
-   this.HookOnAction(() => {if (modbody.rememberquest!=null && document.title.split(' - ')[1]==='Battling') modbody.rememberquest--;});
+   this.HookOnAction(() => {if (modbody.rememberquest!=null && document.title.split(' - ')[1]!='Party') modbody.rememberquest--;});
 
    this.HookOnTab((x) => {console.log(x)});
    this.HookOnTab((x) => {if (x==='enchanting'||x==='crafting') modbody.Update()});
