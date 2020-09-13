@@ -28,6 +28,9 @@ OnNewTab - each time player changes the tab. Passes tab name as optional argumen
 ```
 QQOL.HookOnTab(function(x) {console.log(x)});
 ```
+# Thanks
+Kafziel for 50 000 relics as donation for this mod <3
+
 
 # TODO/Whats next
 Hook view change
