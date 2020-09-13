@@ -25,4 +25,5 @@ QQOL.HookOnAction(() => {console.log('wow')})
 ```
 
 # TODO/Whats next
-No idea
+Hook view change
+Expected gold\exp out of current party max actions
