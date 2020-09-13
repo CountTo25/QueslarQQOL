@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.14
+// @version      0.17
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -13,7 +13,7 @@
 
 class FTGMod {
  constructor() {
-   let ver = '0.14';
+   let ver = '0.17';
    //OBSERVERS
    var modbody = this;
    this.newActionObserver = new MutationObserver(function(mutations) {
@@ -36,7 +36,19 @@ class FTGMod {
           if (mutation.addedNodes.length>0) {
             if (mutation.target.nodeName.toLowerCase().split('-').length==2) {
               if (mutation.target.nodeName.toLowerCase().split('-')[1]!='gamecontent') {
-              modbody.OnNewTab(mutation.target.nodeName.toLowerCase().split('-')[1]);
+                let tab = mutation.target.nodeName.toLowerCase().split('-')[1];
+                if (tab=='actions') {
+                  let subtab = mutation.target.childNodes[2].nodeName.toLowerCase().split('-')[1];
+                  if (subtab=='actions') {
+                    subtab=='pets'; //Blah pls
+                  }
+                  modbody.currentTab = subtab;
+                  modbody.OnNewTab(subtab);
+                } else {
+                  modbody.currentTab = mutation.target.nodeName.toLowerCase().split('-')[1];
+                  modbody.OnNewTab(mutation.target.nodeName.toLowerCase().split('-')[1]);
+                }
+
             }
             }
 
@@ -51,7 +63,7 @@ class FTGMod {
    );
    this.ontabhooks = [];
    //I SUCK AT JS
-   document.onclick = function(){modbody.Update()} //im retarded, look up hooks later
+   //document.onclick = function(){modbody.Update()} //im retarded, look up hooks later
                                                    //.clickable onclick?
 
    //NEW DOM
@@ -80,7 +92,8 @@ class FTGMod {
 
    //FINISH
    this.HookOnAction(() => {modbody.Update()}, true);
-   this.HookOnTab(function(x) {console.log(x)});
+   this.HookOnTab((x) => {console.log(x)});
+   this.HookOnTab((x) => {if (x==='enchanting') modbody.Update()});
    console.log('loaded Quality of Quality of Life mod v'+ver+'. Have a nice day!');
  }
  HookOnAction(func, exec=false) {
@@ -135,15 +148,17 @@ class FTGMod {
  }
 
  TimeToCraft() {
-   if (document.querySelector('.progress-bar-text')) {
-     let txt = document.querySelector('.progress-bar-text').innerHTML;
-     if (!document.getElementById('FTG_time_to_craft')) {
-      let TTCelement = document.createElement('span');
-      TTCelement.id = 'FTG_time_to_craft';
-      document.querySelector('.progress-bar-text').appendChild(TTCelement);
+   if (this.currentTab === 'enchanting' || this.currentTab=='craft') {
+     if (document.querySelector('.progress-bar-text')) {
+       let txt = document.querySelector('.progress-bar-text').innerHTML;
+       if (!document.getElementById('FTG_time_to_craft')) {
+         let TTCelement = document.createElement('span');
+         TTCelement.id = 'FTG_time_to_craft';
+         document.querySelector('.progress-bar-text').appendChild(TTCelement);
+       }
+       let actionVal = parseInt(txt.split(' / ')[1].split(' ')[0]) - parseInt(txt.split(' / ')[0]);
+       document.getElementById('FTG_time_to_craft').innerHTML = '('+this.ActionsToTime(actionVal)+this.GetSeconds(actionVal)+' remaining)';
      }
-     let actionVal = parseInt(txt.split(' / ')[1].split(' ')[0]) - parseInt(txt.split(' / ')[0]);
-     document.getElementById('FTG_time_to_craft').innerHTML = '('+this.ActionsToTime(actionVal)+this.GetSeconds(actionVal)+' remaining)';
    }
  }
 
