@@ -13,7 +13,7 @@
 
 class FTGMod {
  constructor() {
-   let ver = '0.17';
+   let ver = '0.17.1';
    //OBSERVERS
    var modbody = this;
    this.newActionObserver = new MutationObserver(function(mutations) {
