@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.17.1
+// @version      0.18
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -13,7 +13,7 @@
 
 class FTGMod {
  constructor() {
-   let ver = '0.17.1';
+   let ver = '0.18';
    //OBSERVERS
    var modbody = this;
    this.newActionObserver = new MutationObserver(function(mutations) {
@@ -37,11 +37,16 @@ class FTGMod {
             if (mutation.target.nodeName.toLowerCase().split('-').length==2) {
               if (mutation.target.nodeName.toLowerCase().split('-')[1]!='gamecontent') {
                 let tab = mutation.target.nodeName.toLowerCase().split('-')[1];
+                //crafting
                 if (tab=='actions') {
                   let subtab = mutation.target.childNodes[2].nodeName.toLowerCase().split('-')[1];
                   if (subtab=='actions') {
                     subtab=='pets'; //Blah pls
                   }
+                  modbody.currentTab = subtab;
+                  modbody.OnNewTab(subtab);
+                } else if (tab=='market') {
+                  let subtab = mutation.target.childNodes[2].nodeName.toLowerCase().split('-')[2];
                   modbody.currentTab = subtab;
                   modbody.OnNewTab(subtab);
                 } else {
