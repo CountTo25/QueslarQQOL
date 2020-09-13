@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.17
+// @version      0.17.1
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -70,7 +70,7 @@ class FTGMod {
    var csselem = document.createElement("link");
    csselem.setAttribute("rel", "stylesheet");
    csselem.setAttribute("type", "text/css");
-   csselem.setAttribute("href", "https://cdn.jsdelivr.net/gh/countto25/queslarQQOL@latest/cssfix.css");
+   csselem.setAttribute("href", "https://countto25.github.io/QueslarQQOL/cssfix.css");
    document.getElementsByTagName("head")[0].appendChild(csselem);
 
    let QQOLholder = document.createElement('div');
