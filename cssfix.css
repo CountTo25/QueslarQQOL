@@ -23,3 +23,10 @@
     margin-left: 20px;
     margin-right: 20px;
 }
+
+
+.cdk-column-description > div {
+  height: 3rem;
+  overflow-y: scroll;
+
+}
