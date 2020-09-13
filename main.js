@@ -1,19 +1,19 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.18
+// @version      0.20
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
 // @grant        unsafeWindow
 // ==/UserScript==
 
-
+//mat-tab-label-0-1
 //TODO HOOK INTO document.querySelector('app-gamecontent') observer
 
 class FTGMod {
  constructor() {
-   let ver = '0.18';
+   let ver = '0.20';
    //OBSERVERS
    var modbody = this;
    this.newActionObserver = new MutationObserver(function(mutations) {
@@ -80,27 +80,46 @@ class FTGMod {
 
    let QQOLholder = document.createElement('div');
    QQOLholder.id = 'QQOL_holder';
-   document.getElementById('profile-next-level').parentNode.insertBefore(QQOLholder,document.getElementById('profile-next-level').nextSibling)
+   document.getElementById('profile-next-level').parentNode.insertBefore(QQOLholder,document.getElementById('profile-next-level').nextSibling);
+
    let QQOLinfo = document.createElement('div');
    QQOLinfo.style.marginTop = '10px';
    QQOLinfo.id='QQOL_info';
    QQOLinfo.innerHTML = 'QQOL v'+ver;
+
+   let QQOLquests = document.createElement('div');
+   QQOLquests.id='QQOL_quests';
+   QQOLquests.innerHTML = 'Check your <span class="QQOL-link-action" onАААclick="document.querySelector(\'#mat-tab-label-0-1\').click()">quests tab</span> to start';
+
    let timetoleveluptooltip = document.createElement('div');
    timetoleveluptooltip.id = 'QQOL_time_to_levelup';
    let idletimeremainingtooltip = document.createElement('div');
    idletimeremainingtooltip.id='QQOL_remaining_time';
    document.getElementById('QQOL_holder').appendChild(QQOLinfo);
-   document.getElementById('QQOL_holder').appendChild(timetoleveluptooltip);
    document.getElementById('QQOL_holder').appendChild(idletimeremainingtooltip);
+   document.getElementById('QQOL_holder').appendChild(timetoleveluptooltip);
+   document.getElementById('QQOL_holder').appendChild(QQOLquests);
 
    //DECLARE SHIT
+   this.rememberquest = null;
+   this.activetab = null;
 
    //FINISH
    this.HookOnAction(() => {modbody.Update()}, true);
+   this.HookOnAction(() => {if (modbody.rememberquest!=null) modbody.rememberquest--;});
+
    this.HookOnTab((x) => {console.log(x)});
    this.HookOnTab((x) => {if (x==='enchanting'||x==='crafting') modbody.Update()});
+   this.HookOnTab((x) => {modbody.activetab = x});
+   this.HookOnTab((x) => {if (x==='quests') modbody.ScanQuestTime()});
+
+   document.querySelector('#mat-tab-label-0-1').addEventListener('click', function(e) {
+     modbody.ScanQuestTime();
+   });
+
    console.log('loaded Quality of Quality of Life mod v'+ver+'. Have a nice day!');
  }
+
  HookOnAction(func, exec=false) {
    if (exec) func();
    this.onactionhooks.push(func);
@@ -115,6 +134,7 @@ class FTGMod {
    this.TimeToLevelUp();
    this.TimeToCraft();
    this.TrySearchProviderUI();
+   this.TimeToQuestComplete();
  }
 
  GetRemainingActions() {
@@ -149,7 +169,8 @@ class FTGMod {
    if (actionsRemaining<0) {
      txt ="<span style='color: red'>Restart your actions!</span>";
    }
-   document.getElementById('QQOL_remaining_time').innerHTML=txt;
+   if (document.getElementById('QQOL_remaining_time'))
+    document.getElementById('QQOL_remaining_time').innerHTML=txt;
  }
 
  TimeToCraft() {
@@ -174,11 +195,52 @@ class FTGMod {
    return t;
  }
 
+ ScanQuestTime() {
+   if (this.activetab==='quests') {
+    if(document.querySelector('td.cdk-column-objectiveType')) {
+      let qTime = document.querySelector('td.cdk-column-objectiveType').innerHTML;
+      let qTimeMax = parseInt(qTime.split(' / ')[1].split(' ')[0]);
+      let qTimeDone = parseInt(qTime.split(' / ')[0]);
+      let remActions = qTimeMax - qTimeDone;
+      this.rememberquest = remActions;
+    } else {this.rememberquest = 0}
+  } else {
+    console.log('try smth else');
+    if (document.querySelector('#mat-tab-content-0-1 span.ng-star-inserted')) {
+      console.log('found smth else');
+      if (!isNaN(parseInt(document.querySelector('#mat-tab-content-0-1 span.ng-star-inserted').innerHTML.split(' / ')[1]))) {
+        console.log('its a number!');
+        let qTime = document.querySelector('#mat-tab-content-0-1 span.ng-star-inserted').innerHTML;
+        let qTimeMax = parseInt(qTime.split(' / ')[1].split(' ')[0]);
+        let qTimeDone = parseInt(qTime.split(' / ')[0]);
+        let remActions = qTimeMax - qTimeDone;
+        this.rememberquest = remActions;
+      }
+    }
+  }
+ }
+
+ TimeToQuestComplete() {
+   if (this.rememberquest!=null) {
+     let txt;
+     if (this.rememberquest>0) {
+        txt = 'Time till quest complete: '+this.ActionsToTime(this.rememberquest)+this.GetSeconds(this.rememberquest);
+     } else {
+        txt = '<span style="color:red">Grab a new quest!</span>';
+     }
+     if (document.querySelector('#QQOL_quests'))
+     document.querySelector('#QQOL_quests').innerHTML=txt;
+   }
+ }
+
  TimeToLevelUp() {
+   if (document.getElementById('profile-next-level')) {
    let txt = document.getElementById('profile-next-level').innerHTML;
    let actionVal = parseInt(txt.replace(/\D/g,''));
    txt='Time to next level: '+this.ActionsToTime(actionVal)+this.GetSeconds(actionVal);
-   document.getElementById('QQOL_time_to_levelup').innerHTML = txt;
+   if (document.getElementById('QQOL_time_to_levelup'))
+    document.getElementById('QQOL_time_to_levelup').innerHTML = txt;
+    }
 
  }
 
