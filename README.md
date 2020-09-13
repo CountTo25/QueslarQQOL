@@ -24,6 +24,11 @@ OnAction - executes each time an action happens
 QQOL.HookOnAction(() => {console.log('wow')})
 ```
 
+OnNewTab - each time player changes the tab. Passes tab name as optional argument. Some tabs are named weirdly, will work on improving that
+```
+QQOL.HookOnTab(function(x) {console.log(x)});
+```
+
 # TODO/Whats next
 Hook view change
 Expected gold\exp out of current party max actions
