@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.20
+// @version      0.22
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -13,7 +13,7 @@
 
 class FTGMod {
  constructor() {
-   let ver = '0.20';
+   let ver = '0.22';
    //OBSERVERS
    var modbody = this;
    this.newActionObserver = new MutationObserver(function(mutations) {
@@ -203,6 +203,7 @@ class FTGMod {
       let qTimeDone = parseInt(qTime.split(' / ')[0]);
       let remActions = qTimeMax - qTimeDone;
       this.rememberquest = remActions;
+      TimeToQuestComplete();
     } else {this.rememberquest = 0}
   } else {
     console.log('try smth else');
@@ -215,6 +216,7 @@ class FTGMod {
         let qTimeDone = parseInt(qTime.split(' / ')[0]);
         let remActions = qTimeMax - qTimeDone;
         this.rememberquest = remActions;
+        this.TimeToQuestComplete();
       }
     }
   }
@@ -246,13 +248,15 @@ class FTGMod {
 
  TrySearchProviderUI() {
    if (document.querySelector('.cdk-column-username.mat-column-username')&&!(document.getElementById('QQOL_service_search'))) {
-     let serviceSearchBar = document.createElement('input');
-     serviceSearchBar.id = 'QQOL_service_search';
-     serviceSearchBar.placeholder='Find service provider by name';
-     serviceSearchBar.classList.add('QQOL-searchbar');
-     serviceSearchBar.addEventListener('input', ()=>{this.FindProvider()});
-     let insertBefore = document.querySelector('.mat-table.cdk-table.mat-elevation-z8');
-     insertBefore.parentNode.insertBefore(serviceSearchBar,insertBefore)
+     if (this.currentTab == 'enchanting' || this.currentTab == 'crafting') {
+       let serviceSearchBar = document.createElement('input');
+       serviceSearchBar.id = 'QQOL_service_search';
+       serviceSearchBar.placeholder='Find service provider by name';
+       serviceSearchBar.classList.add('QQOL-searchbar');
+       serviceSearchBar.addEventListener('input', ()=>{this.FindProvider()});
+       let insertBefore = document.querySelector('.mat-table.cdk-table.mat-elevation-z8');
+       insertBefore.parentNode.insertBefore(serviceSearchBar,insertBefore)
+    }
    }
    //on services tab
  }
