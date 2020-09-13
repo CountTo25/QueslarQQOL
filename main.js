@@ -98,7 +98,7 @@ class FTGMod {
    //FINISH
    this.HookOnAction(() => {modbody.Update()}, true);
    this.HookOnTab((x) => {console.log(x)});
-   this.HookOnTab((x) => {if (x==='enchanting') modbody.Update()});
+   this.HookOnTab((x) => {if (x==='enchanting'||x==='crafting') modbody.Update()});
    console.log('loaded Quality of Quality of Life mod v'+ver+'. Have a nice day!');
  }
  HookOnAction(func, exec=false) {
