@@ -30,3 +30,8 @@
   overflow-y: scroll;
 
 }
+
+.QQOL-link-action {
+  border-bottom: 1px dotted;
+  cursor: pointer;
+}
