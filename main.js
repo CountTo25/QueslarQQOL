@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.13
+// @version      0.14
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -27,6 +27,29 @@ class FTGMod {
     );
     this.onactionhooks = [];
 
+
+
+    this.newTabObserver = new MutationObserver(function(mutations) {
+      //APP-INVENTORY
+      mutations.forEach(function(mutation) {
+        if (mutation.target.nodeName.toLowerCase().includes('app-')) {
+          if (mutation.addedNodes.length>0) {
+            if (mutation.target.nodeName.toLowerCase().split('-').length==2) {
+              if (mutation.target.nodeName.toLowerCase().split('-')[1]!='gamecontent') {
+              modbody.OnNewTab(mutation.target.nodeName.toLowerCase().split('-')[1]);
+            }
+            }
+
+          }
+        }
+      });
+    });
+
+   this.newTabObserver.observe(
+     document.querySelector('app-gamecontent'),
+     {subtree: true, childList: true }
+   );
+   this.ontabhooks = [];
    //I SUCK AT JS
    document.onclick = function(){modbody.Update()} //im retarded, look up hooks later
                                                    //.clickable onclick?
@@ -57,11 +80,16 @@ class FTGMod {
 
    //FINISH
    this.HookOnAction(() => {modbody.Update()}, true);
+   this.HookOnTab(function(x) {console.log(x)});
    console.log('loaded Quality of Quality of Life mod v'+ver+'. Have a nice day!');
  }
  HookOnAction(func, exec=false) {
    if (exec) func();
    this.onactionhooks.push(func);
+ }
+ HookOnTab(func, exec=false) {
+   if (exec) func();
+   this.ontabhooks.push(func);
  }
 
  Update() {
@@ -78,6 +106,12 @@ class FTGMod {
  OnNewAction() {
    for (let i=0; i<this.onactionhooks.length; i++) {
      this.onactionhooks[i]();
+   }
+ }
+
+ OnNewTab(tname) {
+   for (let i=0; i<this.ontabhooks.length; i++) {
+     this.ontabhooks[i](tname);
    }
  }
 
