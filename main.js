@@ -1,17 +1,19 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.12
-// @description  try to take over the world!
+// @version      0.13
+// @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
 // @grant        unsafeWindow
 // ==/UserScript==
 
 
+//TODO HOOK INTO document.querySelector('app-gamecontent') observer
+
 class FTGMod {
  constructor() {
-   let ver = '0.12';
+   let ver = '0.13';
    //OBSERVERS
    var modbody = this;
    this.newActionObserver = new MutationObserver(function(mutations) {
@@ -91,7 +93,7 @@ class FTGMod {
 
  TimeRemaining() {
    let actionsRemaining = this.GetRemainingActions();
-   let txt ='Idle time remaining: '+this.ActionsToTime(actionsRemaining)+'.'+this.GetRemainingActions()*6%60;
+   let txt ='Idle time remaining: '+this.ActionsToTime(actionsRemaining)+this.GetSeconds(this.GetRemainingActions());
    if (actionsRemaining<0) {
      txt ="<span style='color: red'>Restart your actions!</span>";
    }
@@ -107,14 +109,21 @@ class FTGMod {
       document.querySelector('.progress-bar-text').appendChild(TTCelement);
      }
      let actionVal = parseInt(txt.split(' / ')[1].split(' ')[0]) - parseInt(txt.split(' / ')[0]);
-     document.getElementById('FTG_time_to_craft').innerHTML = '('+this.ActionsToTime(actionVal)+'.'+actionVal*6%60+' remaining)';
+     document.getElementById('FTG_time_to_craft').innerHTML = '('+this.ActionsToTime(actionVal)+this.GetSeconds(actionVal)+' remaining)';
    }
+ }
+
+ GetSeconds(actions) {
+   let t = actions*6%60;
+   if (t<10) t='.0'+t;
+   else t='.'+t;
+   return t;
  }
 
  TimeToLevelUp() {
    let txt = document.getElementById('profile-next-level').innerHTML;
    let actionVal = parseInt(txt.replace(/\D/g,''));
-   txt='Time to next level: '+this.ActionsToTime(actionVal)+'.'+actionVal*6%60;
+   txt='Time to next level: '+this.ActionsToTime(actionVal)+this.GetSeconds(actionVal);
    document.getElementById('QQOL_time_to_levelup').innerHTML = txt;
 
  }
@@ -134,14 +143,10 @@ class FTGMod {
 
  FindProvider() {
 
-   console.log('findprovider!');
    let sTerm = document.getElementById('QQOL_service_search').value.toLowerCase();
-   console.log('sTerm');
    let users = document.querySelectorAll('td.cdk-column-username.mat-column-username > div');
-   console.log(users.length+'l');
    for (let i=0; i<users.length; i++) {
      if (users[i].innerHTML.toLowerCase().includes(sTerm)) {
-       console.log('')
        users[i].parentNode.parentNode.removeAttribute('style');
      } else {
        users[i].parentNode.parentNode.style.display='none'
