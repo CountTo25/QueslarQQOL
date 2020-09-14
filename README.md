@@ -34,5 +34,7 @@ Saros for his random relic drops. Yay! That helps a lot
 
 
 # TODO/Whats next
-Hook view change
 Expected gold\exp out of current party max actions
+OH GOD IM DUMB
+
+Exp\stat quests fix and implementation
