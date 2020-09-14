@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.26
+// @version      0.30
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -11,9 +11,15 @@
 //mat-tab-label-0-1
 //TODO HOOK INTO document.querySelector('app-gamecontent') observer
 
+
+////
+//var rootElement = getAllAngularRootElements()[0].children[1]["__ngContext__"][30];
+//      storage = rootElement.playerGeneralService;
+////
+
 class FTGMod {
  constructor() {
-   let ver = '0.26';
+   let ver = '0.30';
    //OBSERVERS
    var modbody = this;
    this.newActionObserver = new MutationObserver(function(mutations) {
@@ -85,11 +91,11 @@ class FTGMod {
    let QQOLinfo = document.createElement('div');
    QQOLinfo.style.marginTop = '10px';
    QQOLinfo.id='QQOL_info';
-   QQOLinfo.innerHTML = 'QQOL v'+ver;
+   QQOLinfo.innerHTML = '<span class="QQAOL-link-action">QQOL v'+ver+'</span>';
 
    let QQOLquests = document.createElement('div');
    QQOLquests.id='QQOL_quests';
-   QQOLquests.innerHTML = 'Check your <span class="QQOL-link-action" onАААclick="document.querySelector(\'#mat-tab-label-0-1\').click()">quests tab</span> to start';
+   QQOLquests.innerHTML = 'Loading...';
 
    let timetoleveluptooltip = document.createElement('div');
    timetoleveluptooltip.id = 'QQOL_time_to_levelup';
@@ -105,17 +111,12 @@ class FTGMod {
    this.activetab = null;
 
    //FINISH
-   this.HookOnAction(() => {modbody.Update()}, true);
+   this.HookOnAction(() => {modbody.Update()});
    this.HookOnAction(() => {if (modbody.rememberquest!=null && document.title.split(' - ')[1]!='Party') modbody.rememberquest--;});
 
    this.HookOnTab((x) => {console.log(x)});
    this.HookOnTab((x) => {if (x==='enchanting'||x==='crafting') modbody.Update()});
    this.HookOnTab((x) => {modbody.activetab = x});
-   this.HookOnTab((x) => {if (x==='quests') modbody.ScanQuestTime()});
-
-   document.querySelector('#mat-tab-label-0-1').addEventListener('click', function(e) {
-     modbody.ScanQuestTime();
-   });
 
    console.log('loaded Quality of Quality of Life mod v'+ver+'. Have a nice day!');
  }
@@ -129,16 +130,23 @@ class FTGMod {
    this.ontabhooks.push(func);
  }
 
+ get gameData() {
+   let rootElement = getAllAngularRootElements()[0].children[1]["__ngContext__"][30];
+   return rootElement.playerGeneralService;
+
+ }
+
  Update() {
    this.TimeRemaining();
    this.TimeToLevelUp();
    this.TimeToCraft();
    this.TrySearchProviderUI();
    this.TimeToQuestComplete();
+   this.IncomePerHour();
  }
 
  GetRemainingActions() {
-   return parseInt(parseInt(document.title.split(' - ')[0]));
+   return this.gameData.playerActionService.actions.remaining;
  }
 
  OnNewAction() {
@@ -195,46 +203,55 @@ class FTGMod {
    return t;
  }
 
- ScanQuestTime() {
-   if (this.activetab==='quests') {
-    if(document.querySelector('td.cdk-column-objectiveType')) {
-      let qTime = document.querySelector('td.cdk-column-objectiveType').innerHTML;
-      let qTimeMax = parseInt(qTime.split(' / ')[1].split(' ')[0]);
-      let qTimeDone = parseInt(qTime.split(' / ')[0]);
-      let remActions = qTimeMax - qTimeDone;
-      this.rememberquest = remActions;
-      this.TimeToQuestComplete();
-    } else {this.rememberquest = 0}
+ IncomePerHour() {
+  let infospan;
+  if (!document.querySelector('#QQOL_GEPH')) {
+    let appendTo = document.querySelector('.action-result-value-container');
+    infospan = document.createElement('div');
+    infospan.style.marginTop = '10px';
+    infospan.id='QQOL_GEPH';
+    if (appendTo)
+      appendTo.appendChild(infospan);
   } else {
-    console.log('try smth else');
-    if (document.querySelector('#mat-tab-content-0-1 span.ng-star-inserted')) {
-      console.log('found smth else');
-      if (!isNaN(parseInt(document.querySelector('#mat-tab-content-0-1 span.ng-star-inserted').innerHTML.split(' / ')[1]))) {
-        console.log('its a number!');
-        let qTime = document.querySelector('#mat-tab-content-0-1 span.ng-star-inserted').innerHTML;
-        let qTimeMax = parseInt(qTime.split(' / ')[1].split(' ')[0].replace(/\D/g,''));
-        let qTimeDone = parseInt(qTime.split(' / ')[0]);
-        console.log(qTime+'VS'+qTimeMax+'VS'+qTimeDone)
-        let remActions = qTimeMax - qTimeDone;
-        this.rememberquest = remActions;
-        this.TimeToQuestComplete();
-      }
-    }
+    infospan = document.querySelector('#QQOL_GEPH');
   }
+  let exp = this.gameData.playerActionService.actionResult.income.experience.amount;
+  let gold = this.gameData.playerActionService.actionResult.income.gold.amount;
+  infospan.innerHTML = `(<span class='QQOL-tooltip'>${(gold*600).toLocaleString()} gold and ${(exp*600).toLocaleString()} experience per hour<span class='QQOL-tooltiptext'>Unless you die</span></span>)`;
  }
 
+
  TimeToQuestComplete() {
-   if (this.rememberquest!=null) {
-     let txt;
-     if (this.rememberquest>0) {
-        txt = 'Time till quest complete: '+this.ActionsToTime(this.rememberquest)+this.GetSeconds(this.rememberquest);
-     } else {
-        txt = '<span style="color:red">Grab a new quest!</span>';
-     }
-     if (document.querySelector('#QQOL_quests'))
-     document.querySelector('#QQOL_quests').innerHTML=txt;
+   let txt;
+   let cQuest = this.gameData.playerQuestService.currentQuest[0];
+   if (this.gameData.playerQuestService.currentQuestId!=0) {
+     console.log(this.gameData.playerQuestService.currentQuest[0].objectiveType);
+     if (cQuest.objectiveType=='actions') {
+       let remaining = cQuest.objectiveAmount - cQuest.currentProgress;
+       txt = 'Time to quest completion: '+this.ActionsToTime(remaining)+this.GetSeconds(remaining);
+    } else if (cQuest.objectiveType=='kills') {
+      if (this.playerActionService.currentSkill=='battling') {
+        txt = 'Time to quest completion: '+this.ActionsToTime(cQuest.objectiveAmount - cQuest.currentProgress)+this.GetSeconds(remaining);
+      } else {
+        txt = 'Kills quest active, not in battle';
+      }
+    } else if (cQuest.objectiveType=='gold') {
+        if (this.gameData.playerActionService.currentSkill=='battling') {
+          let gpt = this.gameData.playerActionService.actionResult.income.gold.amount;
+          let actionsToCompletion = Math.ceil((cQuest.objectiveAmount - cQuest.currentProgress)/gpt);
+          txt =
+            '<span class="QQOL-tooltip">Time to quest completion<span class="QQOL-tooltiptext">At '
+            +gpt+' gold per turn</span></span>: '+this.ActionsToTime(actionsToCompletion)+this.GetSeconds(actionsToCompletion);
+      } else {
+        txt = 'Gold quest active, not in battle';
+      }
+    }
+   } else {
+     txt = '<span style="color:red">Grab a new quest!</span>';
    }
- }
+   if (document.querySelector('#QQOL_quests'))
+    document.querySelector('#QQOL_quests').innerHTML=txt;
+  }
 
  TimeToLevelUp() {
    if (document.getElementById('profile-next-level')) {
