@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.30
+// @version      0.31
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -19,7 +19,7 @@
 
 class FTGMod {
  constructor() {
-   let ver = '0.30';
+   let ver = '0.31';
    //OBSERVERS
    var modbody = this;
    this.newActionObserver = new MutationObserver(function(mutations) {
@@ -230,14 +230,20 @@ class FTGMod {
        let remaining = cQuest.objectiveAmount - cQuest.currentProgress;
        txt = 'Time to quest completion: '+this.ActionsToTime(remaining)+this.GetSeconds(remaining);
     } else if (cQuest.objectiveType=='kills') {
-      if (this.playerActionService.currentSkill=='battling') {
-        txt = 'Time to quest completion: '+this.ActionsToTime(cQuest.objectiveAmount - cQuest.currentProgress)+this.GetSeconds(remaining);
+      if (this.gameData.playerActionService.currentSkill=='battling') {
+        txt = '<span class="QQOL-tooltip">Time to quest completion<span class="QQOL-tooltiptext">If you keep on fighting solo and avoiding death</span></span>: '
+          +this.ActionsToTime(cQuest.objectiveAmount - cQuest.currentProgress)+this.GetSeconds(cQuest.objectiveAmount - cQuest.currentProgress);
       } else {
         txt = 'Kills quest active, not in battle';
       }
     } else if (cQuest.objectiveType=='gold') {
         if (this.gameData.playerActionService.currentSkill=='battling') {
-          let gpt = this.gameData.playerActionService.actionResult.income.gold.amount;
+          let gpt;
+          if (!this.gameData.partyService.isFighting) {
+            gpt = this.gameData.playerActionService.actionResult.income.gold.amount;
+          } else {
+            gpt = this.gameData.partyService.actionsResult.income.gold.amount;
+          }
           let actionsToCompletion = Math.ceil((cQuest.objectiveAmount - cQuest.currentProgress)/gpt);
           txt =
             '<span class="QQOL-tooltip">Time to quest completion<span class="QQOL-tooltiptext">At '
