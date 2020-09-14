@@ -30,6 +30,7 @@ QQOL.HookOnTab(function(x) {console.log(x)});
 ```
 # Thanks
 Kafziel for 50 000 relics as donation for this mod <3
+Saros for his random relic drops. Yay! That helps a lot
 
 
 # TODO/Whats next
