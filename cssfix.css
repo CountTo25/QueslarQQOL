@@ -58,14 +58,14 @@
 }
 
 .QQOL-tooltip .QQOL-tooltip::after {
-  content: "";
+  content: " ";
   position: absolute;
-  bottom: 100%;
+  top: 100%; /* At the bottom of the tooltip */
   left: 50%;
   margin-left: -5px;
   border-width: 5px;
   border-style: solid;
-  border-color: transparent transparent black transparent;
+  border-color: black transparent transparent transparent;
 }
 
 .QQOL-tooltip:hover .QQOL-tooltiptext {
