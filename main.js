@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.25
+// @version      0.26
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -13,7 +13,7 @@
 
 class FTGMod {
  constructor() {
-   let ver = '0.25';
+   let ver = '0.26';
    //OBSERVERS
    var modbody = this;
    this.newActionObserver = new MutationObserver(function(mutations) {
@@ -212,8 +212,9 @@ class FTGMod {
       if (!isNaN(parseInt(document.querySelector('#mat-tab-content-0-1 span.ng-star-inserted').innerHTML.split(' / ')[1]))) {
         console.log('its a number!');
         let qTime = document.querySelector('#mat-tab-content-0-1 span.ng-star-inserted').innerHTML;
-        let qTimeMax = parseInt(qTime.split(' / ')[1].split(' ')[0]);
+        let qTimeMax = parseInt(qTime.split(' / ')[1].split(' ')[0].replace(/\D/g,''));
         let qTimeDone = parseInt(qTime.split(' / ')[0]);
+        console.log(qTime+'VS'+qTimeMax+'VS'+qTimeDone)
         let remActions = qTimeMax - qTimeDone;
         this.rememberquest = remActions;
         this.TimeToQuestComplete();
