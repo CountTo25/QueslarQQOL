@@ -118,6 +118,8 @@ class FTGMod {
    this.HookOnTab((x) => {if (x==='enchanting'||x==='crafting') modbody.Update()});
    this.HookOnTab((x) => {modbody.activetab = x});
 
+   setInterval(() => {modbody.CheckLatestVersion()}, 1000000);
+
    this.CheckLatestVersion();
 
    console.log('loaded Quality of Quality of Life mod v'+this.ver+'. Have a nice day!');
