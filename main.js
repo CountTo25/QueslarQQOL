@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.31
+// @version      0.32
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -19,7 +19,7 @@
 
 class FTGMod {
  constructor() {
-   let ver = '0.31';
+   this.ver = '0.32';
    //OBSERVERS
    var modbody = this;
    this.newActionObserver = new MutationObserver(function(mutations) {
@@ -91,7 +91,7 @@ class FTGMod {
    let QQOLinfo = document.createElement('div');
    QQOLinfo.style.marginTop = '10px';
    QQOLinfo.id='QQOL_info';
-   QQOLinfo.innerHTML = '<span class="QQAOL-link-action">QQOL v'+ver+'</span>';
+   QQOLinfo.innerHTML = '<span class="QQAOL-link-action">QQOL v'+this.ver+'</span>';
 
    let QQOLquests = document.createElement('div');
    QQOLquests.id='QQOL_quests';
@@ -118,7 +118,9 @@ class FTGMod {
    this.HookOnTab((x) => {if (x==='enchanting'||x==='crafting') modbody.Update()});
    this.HookOnTab((x) => {modbody.activetab = x});
 
-   console.log('loaded Quality of Quality of Life mod v'+ver+'. Have a nice day!');
+   this.CheckLatestVersion();
+
+   console.log('loaded Quality of Quality of Life mod v'+this.ver+'. Have a nice day!');
  }
 
  HookOnAction(func, exec=false) {
@@ -286,7 +288,6 @@ class FTGMod {
  }
 
  FindProvider() {
-
    let sTerm = document.getElementById('QQOL_service_search').value.toLowerCase();
    let users = document.querySelectorAll('td.cdk-column-username.mat-column-username > div');
    for (let i=0; i<users.length; i++) {
@@ -298,7 +299,7 @@ class FTGMod {
    }
  }
 
-ActionsToTime(actions) {
+ ActionsToTime(actions) {
    if (actions<0) return '00:00';
    let minval = Math.floor(actions/10);
    let hourval = Math.floor(minval/60);
@@ -306,7 +307,29 @@ ActionsToTime(actions) {
    let remSeconds = actions/10
    return hourval+':'+(remMinutes<10?('0'+remMinutes):(remMinutes));
  }
-}
+
+  CheckLatestVersion() {
+    let modbody = this;
+    var request = new XMLHttpRequest();
+    request.open('GET', 'https://api.github.com/repos/countto25/queslarqqol/tags', true);
+    request.onload = function() {
+      if (request.status >= 200 && request.status < 400) {
+        var data = JSON.parse(request.responseText);
+        console.log(data);
+        let latestVersion = data[1].name;
+        console.log(parseFloat(latestVersion) + ' vs ' +parseFloat(modbody.ver));
+        console.log(modbody.ver);
+        console.log(parseFloat(latestVersion) > parseFloat(modbody.ver));
+        if ((parseFloat(latestVersion) > parseFloat(modbody.ver))) {
+          let txt = 'QQOL v'+modbody.ver+'. <a target="_blank" href="https://countto25.github.io/QueslarQQOL/" class="QQOL-link-action" style="color:red; text-decoration: none">Please update</a>';
+          document.querySelector('#QQOL_info').innerHTML=txt;
+        }
+      } else {console.log('error getting new version :')}
+    }
+    request.send();
+  }
+ }
+
 
 //TY GREASEMONKEY
 var QQOL = null;
