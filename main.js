@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.32
+// @version      0.40
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -19,9 +19,10 @@
 
 class FTGMod {
  constructor() {
-   this.ver = '0.32';
+   this.ver = '0.40';
    //OBSERVERS
    var modbody = this;
+   this.serviceOrders = {};
    this.newActionObserver = new MutationObserver(function(mutations) {
      mutations.forEach(function(mutation) {
           modbody.OnNewAction();
@@ -109,13 +110,18 @@ class FTGMod {
    //DECLARE SHIT
    this.rememberquest = null;
    this.activetab = null;
+   this.updateInterval = null;
 
    //FINISH
    this.HookOnAction(() => {modbody.Update()});
    this.HookOnAction(() => {if (modbody.rememberquest!=null && document.title.split(' - ')[1]!='Party') modbody.rememberquest--;});
+   this.HookOnAction(() => {if (modbody.updateInterval == null) {modbody.updateInterval = setInterval(() => {modbody.Update()}, 100)}});
+   this.HookOnAction(() => {if (this.currentTab == 'enchanting' ) {this.CraftingServiceUI()}});
+   this.HookOnAction(() => {if (this.currentTab == 'crafting' ) {this.CraftingServiceUI(false)}});
 
    this.HookOnTab((x) => {console.log(x)});
    this.HookOnTab((x) => {if (x==='enchanting'||x==='crafting') modbody.Update()});
+   this.HookOnTab((x) => {if (x==='enchanting'||x==='crafting') modbody.CraftingServiceUI()});
    this.HookOnTab((x) => {modbody.activetab = x});
 
    setInterval(() => {modbody.CheckLatestVersion()}, 1000000);
@@ -177,7 +183,7 @@ class FTGMod {
 
  TimeRemaining() {
    let actionsRemaining = this.GetRemainingActions();
-   let txt ='Idle time remaining: '+this.ActionsToTime(actionsRemaining)+this.GetSeconds(this.GetRemainingActions());
+   let txt ='Idle time remaining: '+this.ActionsToTime(actionsRemaining);
    if (actionsRemaining<0) {
      txt ="<span style='color: red'>Restart your actions!</span>";
    }
@@ -195,16 +201,13 @@ class FTGMod {
          document.querySelector('.progress-bar-text').appendChild(TTCelement);
        }
        let actionVal = parseInt(txt.split(' / ')[1].split(' ')[0]) - parseInt(txt.split(' / ')[0]);
-       document.getElementById('FTG_time_to_craft').innerHTML = '('+this.ActionsToTime(actionVal)+this.GetSeconds(actionVal)+' remaining)';
+       document.getElementById('FTG_time_to_craft').innerHTML = '('+this.ActionsToTime(actionVal)+')';
      }
    }
  }
 
  GetSeconds(actions) {
-   let t = actions*6%60;
-   if (t<10) t='.0'+t;
-   else t='.'+t;
-   return t;
+   return '';
  }
 
  IncomePerHour() {
@@ -219,9 +222,12 @@ class FTGMod {
   } else {
     infospan = document.querySelector('#QQOL_GEPH');
   }
-  let exp = this.gameData.playerActionService.actionResult.income.experience.amount;
-  let gold = this.gameData.playerActionService.actionResult.income.gold.amount;
-  infospan.innerHTML = `(<span class='QQOL-tooltip'>${(gold*600).toLocaleString()} gold and ${(exp*600).toLocaleString()} experience per hour<span class='QQOL-tooltiptext'>Unless you die</span></span>)`;
+  if (Object.keys(this.gameData.playerActionService.actionResult).length!=0) {
+    console.log('heys ok');
+    let exp = this.gameData.playerActionService.actionResult.income.experience.amount;
+    let gold = this.gameData.playerActionService.actionResult.income.gold.amount;
+    infospan.innerHTML = `(<span class='QQOL-tooltip'>${(gold*600).toLocaleString()} gold and ${(exp*600).toLocaleString()} experience per hour<span class='QQOL-tooltiptext'>Unless you die</span></span>)`;
+  } else {console.log(Object.keys(this.gameData.playerActionService.actionResult).length)}
  }
 
 
@@ -229,14 +235,13 @@ class FTGMod {
    let txt;
    let cQuest = this.gameData.playerQuestService.currentQuest[0];
    if (this.gameData.playerQuestService.currentQuestId!=0) {
-     console.log(this.gameData.playerQuestService.currentQuest[0].objectiveType);
      if (cQuest.objectiveType=='actions') {
        let remaining = cQuest.objectiveAmount - cQuest.currentProgress;
-       txt = 'Time to quest completion: '+this.ActionsToTime(remaining)+this.GetSeconds(remaining);
+       txt = 'Time to quest completion: '+this.ActionsToTime(remaining);
     } else if (cQuest.objectiveType=='kills') {
       if (this.gameData.playerActionService.currentSkill=='battling') {
         txt = '<span class="QQOL-tooltip">Time to quest completion<span class="QQOL-tooltiptext">If you keep on fighting solo and avoiding death</span></span>: '
-          +this.ActionsToTime(cQuest.objectiveAmount - cQuest.currentProgress)+this.GetSeconds(cQuest.objectiveAmount - cQuest.currentProgress);
+          +this.ActionsToTime(cQuest.objectiveAmount - cQuest.currentProgress)
       } else {
         txt = 'Kills quest active, not in battle';
       }
@@ -251,7 +256,7 @@ class FTGMod {
           let actionsToCompletion = Math.ceil((cQuest.objectiveAmount - cQuest.currentProgress)/gpt);
           txt =
             '<span class="QQOL-tooltip">Time to quest completion<span class="QQOL-tooltiptext">At '
-            +gpt+' gold per turn</span></span>: '+this.ActionsToTime(actionsToCompletion)+this.GetSeconds(actionsToCompletion);
+            +gpt+' gold per turn</span></span>: '+this.ActionsToTime(actionsToCompletion);
       } else {
         txt = 'Gold quest active, not in battle';
       }
@@ -267,7 +272,7 @@ class FTGMod {
    if (document.getElementById('profile-next-level')) {
    let txt = document.getElementById('profile-next-level').innerHTML;
    let actionVal = parseInt(txt.replace(/\D/g,''));
-   txt='Time to next level: '+this.ActionsToTime(actionVal)+this.GetSeconds(actionVal);
+   txt='Time to next level: '+this.ActionsToTime(actionVal);
    if (document.getElementById('QQOL_time_to_levelup'))
     document.getElementById('QQOL_time_to_levelup').innerHTML = txt;
     }
@@ -300,15 +305,180 @@ class FTGMod {
      }
    }
  }
-
  ActionsToTime(actions) {
    if (actions<0) return '00:00';
    let minval = Math.floor(actions/10);
    let hourval = Math.floor(minval/60);
    let remMinutes = minval%60;
    let remSeconds = actions/10
-   return hourval+':'+(remMinutes<10?('0'+remMinutes):(remMinutes));
+   if ((actions*6%60) - (6-this.gameData.playerActionService.countDown)  < 0)
+    remMinutes--;
+
+    let remSec = actions*6%60;
+    let a = 6-this.gameData.playerActionService.countDown;
+    if (remSec-a<0) {remSec=remSec+60-a} else {remSec = remSec-a;}
+    if (remSec<10) remSec='.0'+remSec;
+    else remSec='.'+remSec;
+
+   return hourval+':'+(remMinutes<10?('0'+remMinutes):(remMinutes))+remSec;
  }
+
+ CraftingServiceUI(isEnch = true) {
+
+   let drawFrom = isEnch?this.gameData.playerEnchantingService : this.gameData.playerCraftingService;
+   if (!(this.gameData.playerEnchantingService.isEnchanting||this.gameData.playerCraftingService.isCrafting)) return 'eh';
+   let serviceData = drawFrom.serviceData;
+   let dataHolder;
+   let chantBonus = isEnch?this.myEquipmentData.enchanting*100:this.myEquipmentData.crafting*100;
+   let chance = 1-Math.floor((chantBonus%100)*100)/100/100;
+   let multiplicator = Math.floor(chantBonus/100)+1;
+   if (!document.querySelector('#QQOL_service_window')) {
+     let objClass = 'app-'+(isEnch?'enchanting':'craft');
+     let insertWhere;
+     if (document.querySelector(objClass + ' .action-progress')) {
+     insertWhere = document.querySelector('.'+(isEnch?'enchanting':'crafting')+'-action-blocks').parentNode;
+   } else {
+     insertWhere = document.querySelector(objClass);
+   }
+     dataHolder = document.createElement('div');
+     dataHolder.id='QQOL_service_window';
+     dataHolder.style.width='25%';
+     dataHolder.classList.add('grid-item');
+     dataHolder.style.border='var(--main-border-color)';
+     dataHolder.style.borderRadius='10px';
+     dataHolder.style.marginLeft='5px';
+     dataHolder.style.marginRight='5px';
+     dataHolder.style.height='max-content';
+     insertWhere.appendChild(dataHolder);
+   } else {
+     dataHolder = document.querySelector('#QQOL_service_window');
+   }
+   let title = serviceData.listings.length > 0 ? 'Your upcoming orders:' : 'No orders in your queue :(';
+   dataHolder.innerHTML = '<div class="main-color under-menu-title"><span>'+title+'</span></div>';
+    dataHolder.innerHTML+='<div id="QQOL_service_list" style="overflow-y: scroll; height: 150px; padding-left: 5px; text-align:left"></div>';
+    dataHolder = document.querySelector('#QQOL_service_list');
+   let queueTime = 0;
+   let currentData = isEnch?this.gameData.playerEnchantingService:this.gameData.playerCraftingService;
+   let totalRelics = 0;
+   if (isNaN(multiplicator)) multiplicator = 1;
+   if (isNaN(chance)) chance = 1;
+   if (currentData.isEnchanting||currentData.isCrafting) {
+     let source = (isEnch?currentData.craftedEnchant:currentData.craftedEquipment);
+     let currentRem = source.crafted_actions_required - source.crafted_actions_done;
+     queueTime = Math.floor((((currentRem) / multiplicator)*chance)*6);
+     console.log(multiplicator + " "+chance);
+   }
+   //refactor later
+   for (let i = 0; i<serviceData.listings.length; i++) {
+     let txt = '';
+     let listing = serviceData.listings[i];
+     let exists = isEnch?(this.serviceOrders.hasOwnProperty(listing.id)):(this.serviceOrders.hasOwnProperty(listing.id))
+     if (!this.serviceOrders.hasOwnProperty(listing.id)) {
+       if (isEnch)
+        this.serviceOrders[listing.id.toString()] = listing.crafted_actions_required;
+       else
+        this.serviceOrders[listing.id.toString()] = listing.crafted_actions_required;
+     }
+   }
+
+   let q = this.gameData.playerQueueService['player'+(isEnch?'Enchanting':'Crafting')+'Queue'];
+   if (q.length>0) {
+     for (let i=0; i<q.length; i++) {
+       console.log(serviceData);
+       console.log(q[i].service_market_item_id);
+       if (this.serviceOrders.hasOwnProperty(q[i].service_market_item_id.toString())) {
+         let t = this.serviceOrders[q[i].service_market_item_id];
+         t = Math.floor((((t) / multiplicator)*chance)*6);
+         queueTime += t;
+       }
+     }
+   }
+   let totalOrders = 0;
+   let relativeOrders = 0;
+   for (let i = 0; i<serviceData.listings.length; i++) {
+     let txt = '';
+     let listing = serviceData.listings[i];
+     totalRelics+=(listing.price_type=='flat'?listing.price_value:listing.price_value*listing.crafted_actions_required);
+     let remActions = listing.crafted_actions_required;
+     let timer = Math.floor(((listing.crafted_actions_required / multiplicator)*chance)*6);
+     txt+='<p style="margin-bottom: 0px;">In '+this.SecondsToString(queueTime)+': ';
+     queueTime+=timer;
+     totalOrders++;
+     this.IsPlayerRelated(listing.buyerUsername)
+      relativeOrders++;
+
+
+     if (this.IsPlayerRelated(listing.buyerUsername)) {
+        txt+='<span class="QQOL-tooltip" style="color: var(--main-color)">'+listing.buyerUsername+'<span class="QQOL-tooltiptext">Your party, village or kingdom member</span></span>, '+listing.price_value+(listing.price_type=='flat'?' flat':'/action')+'</p>';
+     } else {
+        txt+='<span>'+listing.buyerUsername+'</span>, '+listing.price_value+(listing.price_type=='flat'?' flat':'/action')+'</p>';
+     }
+     dataHolder.innerHTML+=txt;
+   }
+   dataHolder=document.querySelector('#QQOL_service_window');
+   let footer = '';
+   footer+='<div class="main-color under-menu-title" style="border-radius: 0px; border-bottom: 1px solid var(--menu-background-color)"><p style="margin-bottom: 0px">';
+   footer+='Total orders: '+totalOrders;
+   if (relativeOrders>0) {
+      footer+=', '+relativeOrders+' from relatives';
+   }
+   footer+='</p></div>';
+   footer+='<div class="main-color under-menu-title" style="border-radius: 0px"><p style="margin-bottom: 0px">Total relics: '+totalRelics.toLocaleString()+'</p></div>';
+   let hVal = Math.floor(((queueTime % 31536000) % 86400) / 3600);
+   footer+='<div class="main-color under-menu-title" style="border-radius: 0px 0px 8px 8px"><p style="margin-bottom: 0px">RPH: '+(Math.floor(totalRelics/hVal*10)/10).toLocaleString()+'</p></div>';
+   dataHolder.innerHTML+=footer;
+ }
+
+
+
+ SecondsToString(seconds)
+{
+  var numyears = Math.floor(seconds / 31536000);
+  var numdays = Math.floor((seconds % 31536000) / 86400);
+  var numhours = Math.floor(((seconds % 31536000) % 86400) / 3600);
+  var numminutes = Math.floor((((seconds % 31536000) % 86400) % 3600) / 60);
+  var numseconds = Math.floor((((seconds % 31536000) % 86400) % 3600) % 60);
+  return numhours.toString().padStart(2, '0') + ":" + numminutes.toString().padStart(2, '0') + "." + numseconds.toString().padStart(2, '0');
+}
+
+
+
+
+ get myEquipmentData() {
+   let myID = this.gameData.gameService.playerData.id;
+   return this.gameData.partyService.partyInformation[myID].equipment;
+ }
+ get playerRelatives() {
+   let relatives = [];
+   if (this.gameData.playerKingdomService.isInKingdom) {
+     villages = this.gameData.playerKingdomService.kingdomData.village;
+     villages.forEach((village) => {
+       village.members.forEach((member) => {
+         relatives.push(member.username);
+       });
+     });
+   } else if (this.gameData.playerVillageService.isInVillage) {
+     this.gameData.playerVillageService.general.members.forEach((member) => {
+       relatives.push(member.username);
+     });
+   }
+   if (this.gameData.partyService.hasParty) {
+     for (let member in this.gameData.partyService.partyInformation) {
+       if (!relatives.includes(this.gameData.partyService.partyInformation[member].player.username))
+        relatives.push(this.gameData.partyService.partyInformation[member].player.username);
+     }
+   }
+   return relatives;
+ }
+
+  IsPlayerRelated(name) {
+    if (this.playerRelatives.includes(name))
+      return true;
+    else
+      return false;
+ }
+
+
 
   CheckLatestVersion() {
     let modbody = this;
@@ -324,6 +494,9 @@ class FTGMod {
         console.log(parseFloat(latestVersion) > parseFloat(modbody.ver));
         if ((parseFloat(latestVersion) > parseFloat(modbody.ver))) {
           let txt = 'QQOL v'+modbody.ver+'. <a target="_blank" href="https://countto25.github.io/QueslarQQOL/" class="QQOL-link-action" style="color:red; text-decoration: none">Please update</a>';
+          document.querySelector('#QQOL_info').innerHTML=txt;
+        } else if (parseFloat(latestVersion) < parseFloat(modbody.ver)) {
+          let txt = 'QQOL v'+modbody.ver+'. <span style="color:green; text-decoration: none">Maybe do your actual job?</span>';
           document.querySelector('#QQOL_info').innerHTML=txt;
         }
       } else {console.log('error getting new version :')}
