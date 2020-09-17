@@ -192,7 +192,7 @@ class FTGMod {
  }
 
  TimeToCraft() {
-   if (this.currentTab === 'enchanting' || this.currentTab=='craft') {
+   if (this.currentTab === 'enchanting' || this.currentTab==='craft') {
      if (document.querySelector('.progress-bar-text')) {
        let txt = document.querySelector('.progress-bar-text').innerHTML;
        if (!document.getElementById('FTG_time_to_craft')) {
@@ -201,7 +201,11 @@ class FTGMod {
          document.querySelector('.progress-bar-text').appendChild(TTCelement);
        }
        let actionVal = parseInt(txt.split(' / ')[1].split(' ')[0]) - parseInt(txt.split(' / ')[0]);
-       document.getElementById('FTG_time_to_craft').innerHTML = '('+this.ActionsToTime(actionVal)+')';
+       let chantBonus = (this.currentTab === 'enchanting')?this.myEquipmentData.enchanting:this.myEquipmentData.crafting;
+       if (isNaN(chantBonus)) chantBonus = 0;
+       let speed = 1+chantBonus;
+       let estActionVal = Math.floor(actionVal/speed)
+       document.getElementById('FTG_time_to_craft').innerHTML = '(~'+this.ActionsToTime(estActionVal)+')';
      }
    }
  }
@@ -223,11 +227,10 @@ class FTGMod {
     infospan = document.querySelector('#QQOL_GEPH');
   }
   if (Object.keys(this.gameData.playerActionService.actionResult).length!=0) {
-    console.log('heys ok');
     let exp = this.gameData.playerActionService.actionResult.income.experience.amount;
     let gold = this.gameData.playerActionService.actionResult.income.gold.amount;
     infospan.innerHTML = `(<span class='QQOL-tooltip'>${(gold*600).toLocaleString()} gold and ${(exp*600).toLocaleString()} experience per hour<span class='QQOL-tooltiptext'>Unless you die</span></span>)`;
-  } else {console.log(Object.keys(this.gameData.playerActionService.actionResult).length)}
+  }
  }
 
 
@@ -329,9 +332,9 @@ class FTGMod {
    if (!(this.gameData.playerEnchantingService.isEnchanting||this.gameData.playerCraftingService.isCrafting)) return 'eh';
    let serviceData = drawFrom.serviceData;
    let dataHolder;
-   let chantBonus = isEnch?this.myEquipmentData.enchanting*100:this.myEquipmentData.crafting*100;
-   let chance = 1-Math.floor((chantBonus%100)*100)/100/100;
-   let multiplicator = Math.floor(chantBonus/100)+1;
+   let chantBonus = isEnch?this.myEquipmentData.enchanting:this.myEquipmentData.crafting;
+   if (isNaN(chantBonus)) chantBonus = 0;
+   let speed = 1+chantBonus;
    if (!document.querySelector('#QQOL_service_window')) {
      let objClass = 'app-'+(isEnch?'enchanting':'craft');
      let insertWhere;
@@ -360,37 +363,26 @@ class FTGMod {
    let queueTime = 0;
    let currentData = isEnch?this.gameData.playerEnchantingService:this.gameData.playerCraftingService;
    let totalRelics = 0;
-   if (isNaN(multiplicator)) multiplicator = 1;
-   if (isNaN(chance)) chance = 1;
    if (currentData.isEnchanting||currentData.isCrafting) {
      let source = (isEnch?currentData.craftedEnchant:currentData.craftedEquipment);
      let currentRem = source.crafted_actions_required - source.crafted_actions_done;
-     queueTime = Math.floor((((currentRem) / multiplicator)*chance)*6);
-     console.log(multiplicator + " "+chance);
-   }
-   //refactor later
-   for (let i = 0; i<serviceData.listings.length; i++) {
-     let txt = '';
-     let listing = serviceData.listings[i];
-     let exists = isEnch?(this.serviceOrders.hasOwnProperty(listing.id)):(this.serviceOrders.hasOwnProperty(listing.id))
-     if (!this.serviceOrders.hasOwnProperty(listing.id)) {
-       if (isEnch)
-        this.serviceOrders[listing.id.toString()] = listing.crafted_actions_required;
-       else
-        this.serviceOrders[listing.id.toString()] = listing.crafted_actions_required;
-     }
+     queueTime = Math.floor((currentRem) /speed)*6;
    }
 
    let q = this.gameData.playerQueueService['player'+(isEnch?'Enchanting':'Crafting')+'Queue'];
    if (q.length>0) {
      for (let i=0; i<q.length; i++) {
-       console.log(serviceData);
-       console.log(q[i].service_market_item_id);
-       if (this.serviceOrders.hasOwnProperty(q[i].service_market_item_id.toString())) {
-         let t = this.serviceOrders[q[i].service_market_item_id];
-         t = Math.floor((((t) / multiplicator)*chance)*6);
-         queueTime += t;
-       }
+       //not sure if the formula is right, shoutout   to dude who didnt want to be shoutouted lol
+       //round(N5^0.5*4*3)
+       let formula = 0;
+       if (isEnch)
+        formula = Math.ceil(Math.pow(q[i].level_requirement,0.5)*((q[i].item_rarity+1)/2)*3);
+       else
+        formula = Math.ceil(Math.pow(q[i].level_requirement/2, 0.5)*(Math.pow(5, 0.5)+(q[i].item_rarity+1)/2)*3);
+       //look up into whats this
+       //=ROUND(($C$5/2)^0.5*(5^0.5+switch($C$8,"Relic",4,"Unique",3.5,"Magical",3))*3)
+       console.log('adding actions: '+formula+'('+formula*6+')');
+       queueTime+=formula*6;
      }
    }
    let totalOrders = 0;
@@ -400,7 +392,8 @@ class FTGMod {
      let listing = serviceData.listings[i];
      totalRelics+=(listing.price_type=='flat'?listing.price_value:listing.price_value*listing.crafted_actions_required);
      let remActions = listing.crafted_actions_required;
-     let timer = Math.floor(((listing.crafted_actions_required / multiplicator)*chance)*6);
+     console.log(speed+'?')
+     let timer = Math.floor(listing.crafted_actions_required / speed)*6;
      txt+='<p style="margin-bottom: 0px;">In '+this.SecondsToString(queueTime)+': ';
      queueTime+=timer;
      totalOrders++;
