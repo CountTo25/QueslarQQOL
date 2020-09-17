@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.40
+// @version      0.41
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -17,9 +17,13 @@
 //      storage = rootElement.playerGeneralService;
 ////
 
+
+//QQOL.gameData.marketService.serviceOrders
+//
+
 class FTGMod {
  constructor() {
-   this.ver = '0.40';
+   this.ver = '0.41';
    //OBSERVERS
    var modbody = this;
    this.serviceOrders = {};
@@ -381,8 +385,8 @@ class FTGMod {
         formula = Math.ceil(Math.pow(q[i].level_requirement/2, 0.5)*(Math.pow(5, 0.5)+(q[i].item_rarity+1)/2)*3);
        //look up into whats this
        //=ROUND(($C$5/2)^0.5*(5^0.5+switch($C$8,"Relic",4,"Unique",3.5,"Magical",3))*3)
-       console.log('adding actions: '+formula+'('+formula*6+')');
-       queueTime+=formula*6;
+       console.log('adding actions: '+formula/speed+'('+formula/speed*6+')');
+       queueTime+=(formula/speed)*6;
      }
    }
    let totalOrders = 0;
@@ -397,7 +401,7 @@ class FTGMod {
      txt+='<p style="margin-bottom: 0px;">In '+this.SecondsToString(queueTime)+': ';
      queueTime+=timer;
      totalOrders++;
-     this.IsPlayerRelated(listing.buyerUsername)
+     if (this.IsPlayerRelated(listing.buyerUsername))
       relativeOrders++;
 
 
@@ -418,7 +422,9 @@ class FTGMod {
    footer+='</p></div>';
    footer+='<div class="main-color under-menu-title" style="border-radius: 0px"><p style="margin-bottom: 0px">Total relics: '+totalRelics.toLocaleString()+'</p></div>';
    let hVal = Math.floor(((queueTime % 31536000) % 86400) / 3600);
-   footer+='<div class="main-color under-menu-title" style="border-radius: 0px 0px 8px 8px"><p style="margin-bottom: 0px">RPH: '+(Math.floor(totalRelics/hVal*10)/10).toLocaleString()+'</p></div>';
+   let split = (Math.floor(totalRelics/hVal*10)/10);
+   let output = 'Clean RPH: '+(split/10*2) + '</br>Broken RPH: '+(split/10*8);
+   footer+='<div class="main-color under-menu-title" style="border-radius: 0px 0px 8px 8px"><p style="margin-bottom: 0px">RPH: <span class="QQOL-tooltip">'+(Math.floor(totalRelics/hVal*10)/10).toLocaleString()+'<span class="QQOL-tooltiptext">'+output+'</span></span></p></div>';
    dataHolder.innerHTML+=footer;
  }
 
@@ -444,8 +450,7 @@ class FTGMod {
  get playerRelatives() {
    let relatives = [];
    if (this.gameData.playerKingdomService.isInKingdom) {
-     villages = this.gameData.playerKingdomService.kingdomData.village;
-     villages.forEach((village) => {
+    this.gameData.playerKingdomService.kingdomData.village.forEach((village) => {
        village.members.forEach((member) => {
          relatives.push(member.username);
        });
