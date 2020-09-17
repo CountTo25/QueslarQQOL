@@ -4,6 +4,8 @@
     padding: 1px;
 }
 
+div.enchanting-action-item-info-rows.upper-border {overflow-y:auto!important;}
+
 .mat-tooltip-trigger {
     font-size: 14px !important;
 }
