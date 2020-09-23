@@ -83,6 +83,6 @@ div.enchanting-action-item-info-rows.upper-border {overflow-y:auto!important;}
     padding-top: 10%;
 }
 .action-result-value-container .p-1{
-  padding: 0px;
+  padding: 0px !important;
 
 }
