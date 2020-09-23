@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.41
+// @version      0.42
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -23,7 +23,7 @@
 
 class FTGMod {
  constructor() {
-   this.ver = '0.41';
+   this.ver = '0.42';
    //OBSERVERS
    var modbody = this;
    this.serviceOrders = {};
@@ -92,6 +92,7 @@ class FTGMod {
    let QQOLholder = document.createElement('div');
    QQOLholder.id = 'QQOL_holder';
    document.getElementById('profile-next-level').parentNode.insertBefore(QQOLholder,document.getElementById('profile-next-level').nextSibling);
+   //document.getElementById('mat-tab-content-0-1').children[0].appendChild(QQOLholder);
 
    let QQOLinfo = document.createElement('div');
    QQOLinfo.style.marginTop = '10px';
@@ -122,6 +123,7 @@ class FTGMod {
    this.HookOnAction(() => {if (modbody.updateInterval == null) {modbody.updateInterval = setInterval(() => {modbody.Update()}, 100)}});
    this.HookOnAction(() => {if (this.currentTab == 'enchanting' ) {this.CraftingServiceUI()}});
    this.HookOnAction(() => {if (this.currentTab == 'crafting' ) {this.CraftingServiceUI(false)}});
+   this.HookOnAction(() => this.IncomePerHour());
 
    this.HookOnTab((x) => {console.log(x)});
    this.HookOnTab((x) => {if (x==='enchanting'||x==='crafting') modbody.Update()});
@@ -156,7 +158,6 @@ class FTGMod {
    this.TimeToCraft();
    this.TrySearchProviderUI();
    this.TimeToQuestComplete();
-   this.IncomePerHour();
  }
 
  GetRemainingActions() {
@@ -220,20 +221,29 @@ class FTGMod {
 
  IncomePerHour() {
   let infospan;
-  if (!document.querySelector('#QQOL_GEPH')) {
+  let subname = (this.currentTab == 'party')?'p':'s'
+  if (!document.querySelector('#QQOL_GEPH_'+subname)) {
     let appendTo = document.querySelector('.action-result-value-container');
     infospan = document.createElement('div');
     infospan.style.marginTop = '10px';
-    infospan.id='QQOL_GEPH';
+    infospan.id='QQOL_GEPH_'+subname;
     if (appendTo)
       appendTo.appendChild(infospan);
   } else {
-    infospan = document.querySelector('#QQOL_GEPH');
+    infospan = document.querySelector('#QQOL_GEPH_'+subname);
   }
-  if (Object.keys(this.gameData.playerActionService.actionResult).length!=0) {
-    let exp = this.gameData.playerActionService.actionResult.income.experience.amount;
-    let gold = this.gameData.playerActionService.actionResult.income.gold.amount;
-    infospan.innerHTML = `(<span class='QQOL-tooltip'>${(gold*600).toLocaleString()} gold and ${(exp*600).toLocaleString()} experience per hour<span class='QQOL-tooltiptext'>Unless you die</span></span>)`;
+  if (this.currentTab == 'party') {
+    if (Object.keys(this.gameData.partyService.actionResult).length!=0) {
+      let exp = this.gameData.partyService.actionResult.income.experience.amount;
+      let gold = this.gameData.partyService.actionResult.income.gold.amount;
+      infospan.innerHTML = `(<span class='QQOL-tooltip'>${(gold*600).toLocaleString()} gold and ${(exp*600).toLocaleString()} experience per hour<span class='QQOL-tooltiptext'>Unless you die</span></span>)`;
+    }
+  } else {
+    if (Object.keys(this.gameData.playerActionService.actionResult).length!=0) {
+      let exp = this.gameData.playerActionService.actionResult.income.experience.amount;
+      let gold = this.gameData.playerActionService.actionResult.income.gold.amount;
+      infospan.innerHTML = `(<span class='QQOL-tooltip'>${(gold*600).toLocaleString()} gold and ${(exp*600).toLocaleString()} experience per hour<span class='QQOL-tooltiptext'>Unless you die</span></span>)`;
+    }
   }
  }
 
@@ -254,11 +264,14 @@ class FTGMod {
       }
     } else if (cQuest.objectiveType=='gold') {
         if (this.gameData.playerActionService.currentSkill=='battling') {
-          let gpt;
+          let gpt = 0;
           if (!this.gameData.partyService.isFighting) {
             gpt = this.gameData.playerActionService.actionResult.income.gold.amount;
           } else {
-            gpt = this.gameData.partyService.actionsResult.income.gold.amount;
+              txt = 'Doing party actions';
+              if (document.querySelector('#QQOL_quests'))
+               document.querySelector('#QQOL_quests').innerHTML=txt;
+              return false;
           }
           let actionsToCompletion = Math.ceil((cQuest.objectiveAmount - cQuest.currentProgress)/gpt);
           txt =
@@ -378,6 +391,7 @@ class FTGMod {
      for (let i=0; i<q.length; i++) {
        //not sure if the formula is right, shoutout   to dude who didnt want to be shoutouted lol
        //round(N5^0.5*4*3)
+       //whoever did that formula, shout out to you. Contact me, i'll reference ya
        let formula = 0;
        if (isEnch)
         formula = Math.ceil(Math.pow(q[i].level_requirement,0.5)*((q[i].item_rarity+1)/2)*3);
@@ -385,6 +399,7 @@ class FTGMod {
         formula = Math.ceil(Math.pow(q[i].level_requirement/2, 0.5)*(Math.pow(5, 0.5)+(q[i].item_rarity+1)/2)*3);
        //look up into whats this
        //=ROUND(($C$5/2)^0.5*(5^0.5+switch($C$8,"Relic",4,"Unique",3.5,"Magical",3))*3)
+       //whoever did that formula, shout out to you. Contact me, i'll reference ya
        console.log('adding actions: '+formula/speed+'('+formula/speed*6+')');
        queueTime+=(formula/speed)*6;
      }
