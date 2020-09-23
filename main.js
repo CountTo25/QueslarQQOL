@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.42
+// @version      0.43
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -23,7 +23,7 @@
 
 class FTGMod {
  constructor() {
-   this.ver = '0.42';
+   this.ver = '0.43';
    //OBSERVERS
    var modbody = this;
    this.serviceOrders = {};
@@ -331,11 +331,12 @@ class FTGMod {
    let hourval = Math.floor(minval/60);
    let remMinutes = minval%60;
    let remSeconds = actions/10
-   if ((actions*6%60) - (6-this.gameData.playerActionService.countDown)  < 0)
+   let subSeconds =  this.gameData.partyService.isFighting?this.gameData.partyService.countDown:this.gameData.playerActionService.countDown;
+   if ((actions*6%60) - (6-subSeconds)  < 0)
     remMinutes--;
 
     let remSec = actions*6%60;
-    let a = 6-this.gameData.playerActionService.countDown;
+    let a = 6-subSeconds;
     if (remSec-a<0) {remSec=remSec+60-a} else {remSec = remSec-a;}
     if (remSec<10) remSec='.0'+remSec;
     else remSec='.'+remSec;
