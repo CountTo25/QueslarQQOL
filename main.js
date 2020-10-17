@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.43
+// @version      0.44
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -23,7 +23,7 @@
 
 class FTGMod {
  constructor() {
-   this.ver = '0.43';
+   this.ver = '0.44';
    //OBSERVERS
    var modbody = this;
    this.serviceOrders = {};
@@ -267,6 +267,8 @@ class FTGMod {
           let gpt = 0;
           if (!this.gameData.partyService.isFighting) {
             gpt = this.gameData.playerActionService.actionResult.income.gold.amount;
+            if (this.gameData.playerActionService.actionResult.income.gold.tax)
+              gpt+=this.gameData.playerActionService.actionResult.income.gold.tax;
           } else {
               txt = 'Doing party actions';
               if (document.querySelector('#QQOL_quests'))
@@ -370,7 +372,8 @@ class FTGMod {
      dataHolder.style.marginLeft='5px';
      dataHolder.style.marginRight='5px';
      dataHolder.style.height='max-content';
-     insertWhere.appendChild(dataHolder);
+     if (insertWhere)
+      insertWhere.appendChild(dataHolder);
    } else {
      dataHolder = document.querySelector('#QQOL_service_window');
    }
@@ -441,7 +444,8 @@ class FTGMod {
    let split = (Math.floor(totalRelics/hVal*10)/10);
    let output = 'Clean RPH: '+(split/10*2) + '</br>Broken RPH: '+(split/10*8);
    footer+='<div class="main-color under-menu-title" style="border-radius: 0px 0px 8px 8px"><p style="margin-bottom: 0px">RPH: <span class="QQOL-tooltip">'+(Math.floor(totalRelics/hVal*10)/10).toLocaleString()+'<span class="QQOL-tooltiptext">'+output+'</span></span></p></div>';
-   dataHolder.innerHTML+=footer;
+   if(dataHolder)
+    dataHolder.innerHTML+=footer;
  }
 
 
