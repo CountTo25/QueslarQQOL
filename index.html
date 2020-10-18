@@ -1,3 +1,103 @@
-<h1>Update is ready!</h1>
- <p>You can update your plugin at <a href='https://github.com/CountTo25/QueslarQQOL'>Github</a> or <a href='https://greasyfork.org/scripts/411266-qqol'>Greasyfork</a></p>
+<html>
+<head>
+  <title>QQOL</title>
+  <link rel="stylesheet" href="page.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500&display=swap" rel="stylesheet">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
+<div class='header'>
+  <span class='title'>QQOL v0.45</span>
+  <div class='to_right'>
+    <span><a class='a' href='https://greasyfork.org/ru/scripts/411266-qqol '>Install</a></span>
+    <span><a class='a' href='https://github.com/CountTo25/QueslarQQOL'>Repo</a></span>
+  </div>
+</div>
+<div class='content'>
+  <div class='bg light pad'>
+    <p class='subtitled'>Shitty Queslar plugin.</p>
+    <p>With totally overblown landing page and unnecessary features</p>
+    <p class='CTA'><span class='CTA_header'>Get</span> it now at <a href='https://github.com/CountTo25/QueslarQQOL'>Github</a> or <a href='https://greasyfork.org/scripts/411266-qqol'>Greasyfork</a></p>
+  </div>
+  <div class='bg dark'>
+    <div class='tab_selector'>
+      <span to='about' class='active'>About QQOL</span>
+      <span to='notes'>Patch notes</span>
+      <span to='thanks'>Shotouts</span>
+    </div>
+  </div>
+    <div class='desc' id='about'>
+      <div class='bg dark pad'>
+      <p>This plugin adds UI QOL updates, bugfixes to CSS and exposes more readable data to you</p>
+      <div class='demo sidebar'>
+        <img src='img/overview.png'></img>
+        <p>QQOL sidebar shows bunch of data in readable format,</br>
+           tells you how long can you be afk without losing actions</br>
+           and provides data on quest progress</br></br>
+           Btw i just wanted to fiddle with CSS and JS</br>
+           And i added a bit more text in this block just so it dosent look deserted
+        </p>
+      </div>
+      <div class='demo sidebar'>
+        <img src='img/enchanting.png'></img>
+        <p>Do you craft? Enchanting, maybe?</br>
+           Well, thats a bad career choice. Still, there's something for you!</br>
+           Track your service orders. Get estimate on time it will take</br>
+           See how much relics you will gain per hour, what kind of price was paid per each order</br>
+           You're one of the cool guys? Your relatives - party and kingdom members - are highlighted, so you know who to refund</br></br>
+           Please god i beg you create some tension on enchanting market, i wanna better chants D:
+         </p>
+       </div>
+       </div>
+       <div class='bg light pad'>
+         <p class='subtitled'>And some small things.</p>
+         <p>Fixes to Blah CSS, hooks for custom functions and some magic (nah)</p>
+         <p>Someday we will get adaptive version for phones. Someday</p>
+       </div>
+       <div class='bg dark pad'>
+         <p>
+           Make stuff thats not round round. So it fits the border</br>
+           Wanna make something for yourself? Hook it up! Look for QQOL.HookOnAction() and QQOL.</br></br>
+           There's no magic. Sorry.</p>
 
+       </div>
+       <div class='bg light pad'>
+         <p class='CTA'><span id='CTA_header'>Get</span> QQOL at <a href='https://github.com/CountTo25/QueslarQQOL'>Github</a> or <a href='https://greasyfork.org/scripts/411266-qqol'>Greasyfork</a></p>
+       </div>
+  </div>
+
+  <div class='desc bg dark pad' id='notes' style='display: none'>
+    <div class='patchnote'>
+      <p>0.45</p>
+      <p>Did i just really push an update to flex a new landing page?</p>
+      <p>
+        Well, no. Other than proper patchnotes and version history from now on...</br>
+        +Idle time update. Now it includes party actions remaining too with a tooltip about that</br>
+        +Totally pointless landing page. And it actually looks awful!</br>
+        +Prototyped blocker for action refresh when your current actions > than max. A bit buggy, enable it manually @BlockActionsOnOvercap(), will fix later
+      </p>
+    </div>
+  </div>
+  <div class='desc bg dark pad' id='thanks' style='display: none'>
+    <p>Saros: for bunch of relics</p>
+    <p>Vifs:  for suggestions and stuff</p>
+    <p>Someone: for formulas on queue time. If its yours, let me know. Got it sent via PM</p>
+  </div>
+</div>
+</body>
+<script>
+  $(document).ready(function() {
+    $('.tab_selector span').click(function() {
+      $('.desc').hide();
+      $('.active').removeClass('active');
+      $(this).addClass('active');
+      $('#'+$(this).attr('to')).show();
+    });
+    let urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('update')) {
+      $('.CTA_header').html('Update');
+      $('[to="notes"]').click();
+    }
+  });
+</script>
+</html>

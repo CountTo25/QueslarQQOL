@@ -1,0 +1,142 @@
+
+.header {
+  text-align: center;
+  background-color: var(--bg);
+  color: var(--text);
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+.header .to_right {
+  font-size: 15px;
+  line-height: 15px;
+  left: 20px;
+  position: relative;
+  display: inline-block;
+  width: 0px;
+}
+
+.a {
+  text-decoration: none;
+  color: var(--text);
+}
+
+.demo img, .demo p{
+  display: inline-block;
+  vertical-align: top;
+}
+
+.demo {
+  width: max-content;
+}
+
+.demo.sidebar {
+}
+
+.demo.right p {
+  text-align: right;
+}
+
+.demo img {
+  height:30vh;
+}
+
+.demo.sidebar p {
+  width: 50vw;
+  font-size: 24px;
+  padding-left: 10px;
+}
+
+.subtitled {
+  font-size: 50px !important;
+  padding-bottom: 0px !important;
+  margin-bottom: 0px !important;
+  margin-top: 0px !important;
+}
+
+.desc {
+}
+
+.subtitled + p {
+  font-size: 20px !important;
+  padding-top: 0px !important;
+  margin-top: 0px !important;
+  padding-left: 20px !important;
+  font-weight: 300 !important;
+  margin-bottom: 0px !important;
+
+}
+
+.bg {
+  padding-top: 50px;
+  padding-bottom: 10px;
+}
+
+.pad {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.tab_selector {
+  font-size: 30px;
+  padding-bottom:30px;
+
+}
+
+.patchnote {
+  border-bottom: 1px solid var(--text)
+}
+
+.CTA {
+  font-size: 20px;
+}
+
+.tab_selector span {
+  border-bottom: 3px dashed var(--text);
+  cursor: pointer;
+}
+
+.tab_selector span.active {
+  border-bottom: none !important;
+}
+
+
+
+.tab_selector span:not(first-of-type) {
+  margin-left: 30px;
+}
+
+.bg.dark {
+  color: var(--text);
+  background-color: var(--bg);
+}
+
+.bg.light {
+  background-color: white;
+  color: black;
+}
+
+.padded {
+
+}
+
+
+.title {
+  font-size: 30px;
+}
+
+
+
+body {
+      padding: 0px;
+      margin: 0px;
+      font-family: 'Roboto', sans-serif;
+      font-weight: 400;
+      --bg: #213025;
+      --text: #bababa;
+      background-color: var(--bg);
+}
+
+.desc p {
+  font-size:20px;
+}

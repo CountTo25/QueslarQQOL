@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.44
+// @version      0.45
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -23,7 +23,7 @@
 
 class FTGMod {
  constructor() {
-   this.ver = '0.44';
+   this.ver = '0.45';
    //OBSERVERS
    var modbody = this;
    this.serviceOrders = {};
@@ -129,6 +129,7 @@ class FTGMod {
    this.HookOnTab((x) => {if (x==='enchanting'||x==='crafting') modbody.Update()});
    this.HookOnTab((x) => {if (x==='enchanting'||x==='crafting') modbody.CraftingServiceUI()});
    this.HookOnTab((x) => {modbody.activetab = x});
+   this.HookOnTab((x) => {if (x==='battle') this.BlockActionsOnOvercap()});
 
    setInterval(() => {modbody.CheckLatestVersion()}, 1000000);
 
@@ -186,10 +187,34 @@ class FTGMod {
   }
  }
 
+ BlockActionsOnOvercap() {
+   return '';
+   //find smth to do with issue
+   if (this.gameData.playerActionService.actions.remaining > this.gameData.playerActionService.actions.total &&
+       this.gameData.playerActionService.currentSkill == "battling" &&
+       !this.gameData.partyService.isFighting) {
+     document.querySelector('[joyridestep="startingTutorialSix"]').style.pointerEvents = 'none';
+     document.querySelector('[joyridestep="startingTutorialSix"]').innerHTML = 'Refreshing will reset action cap';
+   } else {
+     document.querySelector('[joyridestep="startingTutorialSix"]').style.pointerEvents = 'unset';
+     document.querySelector('[joyridestep="startingTutorialSix"]').innerHTML = 'Fight';
+   }
+ }
+
  TimeRemaining() {
    let actionsRemaining = this.GetRemainingActions();
    let txt ='Idle time remaining: '+this.ActionsToTime(actionsRemaining);
-   if (actionsRemaining<0) {
+   let playerId = this.gameData.gameService.playerData.id;
+   if (this.gameData.partyService.hasParty) {
+    let partyActionsRemaining = this.gameData.partyService.partyInformation[playerId].actions.daily_actions_remaining;
+    actionsRemaining += partyActionsRemaining;
+    //<span class="QQOL-tooltip">
+    txt ='<span class="QQOL-tooltip"><span class="QQOL-tooltiptext">'
+      +this.GetRemainingActions()+
+      ' solo actions and '+partyActionsRemaining+' party actions</span>Idle time remaining</span>: '
+      +this.ActionsToTime(actionsRemaining);
+   }
+   if (this.GetRemainingActions()<0) {
      txt ="<span style='color: red'>Restart your actions!</span>";
    }
    if (document.getElementById('QQOL_remaining_time'))
@@ -511,7 +536,7 @@ class FTGMod {
         console.log(modbody.ver);
         console.log(parseFloat(latestVersion) > parseFloat(modbody.ver));
         if ((parseFloat(latestVersion) > parseFloat(modbody.ver))) {
-          let txt = 'QQOL v'+modbody.ver+'. <a target="_blank" href="https://countto25.github.io/QueslarQQOL/" class="QQOL-link-action" style="color:red; text-decoration: none">Please update</a>';
+          let txt = 'QQOL v'+modbody.ver+'. <a target="_blank" href="https://countto25.github.io/QueslarQQOL?update=true" class="QQOL-link-action" style="color:red; text-decoration: none">Please update</a>';
           document.querySelector('#QQOL_info').innerHTML=txt;
         } else if (parseFloat(latestVersion) < parseFloat(modbody.ver)) {
           let txt = 'QQOL v'+modbody.ver+'. <span style="color:green; text-decoration: none">Maybe do your actual job?</span>';
