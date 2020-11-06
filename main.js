@@ -578,10 +578,10 @@ class FTGMod {
     div.innerHTML = settingsmenu;
     document.body.appendChild(div);
     document.querySelector('#exitSettings').onclick = function() {
-      document.querySelector('QQOLsettings').style.display='none';
+      document.querySelector('.QQOLsettings').style.display='none';
     }
     document.querySelector('#toSettings').onclick = function() {
-      document.querySelector('QQOLsettings').style.display='block';
+      document.querySelector('.QQOLsettings').style.display='block';
     }
     let checks = document.querySelectorAll('input[type=checkbox].QQOLCheck');
     checks.forEach(check => {
