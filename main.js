@@ -577,6 +577,12 @@ class FTGMod {
     div.style.display = 'none';
     div.innerHTML = settingsmenu;
     document.body.appendChild(div);
+    let checks = document.querySelector('input[type=checkbox]');
+    checks.forEach(check => {
+      check.oninput = function() {
+        console.log(this);
+      }
+    });
   }
  }
 
