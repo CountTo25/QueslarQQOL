@@ -97,7 +97,7 @@ class FTGMod {
    let QQOLinfo = document.createElement('div');
    QQOLinfo.style.marginTop = '10px';
    QQOLinfo.id='QQOL_info';
-   QQOLinfo.innerHTML = '<span class="QQAOL-link-action">QQOL v'+this.ver+'</span>';
+   QQOLinfo.innerHTML = '<span id="toSettings" class="QQOL-link-action">QQOL v'+this.ver+'</span>';
 
    let QQOLquests = document.createElement('div');
    QQOLquests.id='QQOL_quests';
@@ -577,10 +577,17 @@ class FTGMod {
     div.style.display = 'none';
     div.innerHTML = settingsmenu;
     document.body.appendChild(div);
+    document.querySelector('#exitSettings').onclick = function() {
+      document.querySelector('QQOLsettings').style.display='none';
+    }
+    document.querySelector('#toSettings').onclick = function() {
+      document.querySelector('QQOLsettings').style.display='block';
+    }
     let checks = document.querySelectorAll('input[type=checkbox].QQOLCheck');
     checks.forEach(check => {
       check.oninput = function() {
-        console.log(this);
+        localStorage.setItem('QQOL_'+this.getAttribute('for'), this.checked?1:0);
+        console.log(this.checked?1:0);
       }
     });
   }
