@@ -134,6 +134,7 @@ class FTGMod {
    setInterval(() => {modbody.CheckLatestVersion()}, 1000000);
 
    this.CheckLatestVersion();
+   this.DoUI();
 
    console.log('loaded Quality of Quality of Life mod v'+this.ver+'. Have a nice day!');
  }
@@ -547,11 +548,38 @@ class FTGMod {
     request.send();
   }
 
-  DoUI() {
-    $('document').ready(function() {
-      let admUI = $('body').append('<div class="QQOLsettings" style="display: none" id="QQOLsettings"></div>');
+  function fetchHTML(url)
+{
+  if( 'undefined' == typeof(url) ) return false;
 
-    });
+  if( document.all ){
+    p = new ActiveXObject("Microsoft.XMLHTTP");
+  }
+  else
+  {
+    p = new XMLHttpRequest();
+  }
+  rnd = Math.random().toString().substring(3);
+  if( url.indexOf('?') > -1 )
+  {
+    url+='&rnd='+rnd;
+  }
+  else
+  {
+    url+='?rnd='+rnd;
+  }
+  p.open("GET",url,false);
+  p.send(null);
+  return p.responseText;
+}
+
+  DoUI() {
+    let div = document.createElement("div");
+    let settingsmenu = fetchHTML('https://countto25.github.io/QueslarQQOL/menu.html');
+    div.classList.add("QQOLsettings");
+    div.style.display = 'none';
+    div.innerHTML = settingsmenu;
+    document.body.appendChild(div);
   }
  }
 
