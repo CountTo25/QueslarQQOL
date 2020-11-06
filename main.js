@@ -548,34 +548,31 @@ class FTGMod {
     request.send();
   }
 
-  function fetchHTML(url)
-{
-  if( 'undefined' == typeof(url) ) return false;
-
-  if( document.all ){
-    p = new ActiveXObject("Microsoft.XMLHTTP");
-  }
-  else
-  {
+  fetchHTML(url) {
+    if( 'undefined' == typeof(url) ) return false;
+    let p;
+    if( document.all ){
+      p = new ActiveXObject("Microsoft.XMLHTTP");
+    } else {
     p = new XMLHttpRequest();
-  }
-  rnd = Math.random().toString().substring(3);
-  if( url.indexOf('?') > -1 )
-  {
-    url+='&rnd='+rnd;
-  }
-  else
-  {
-    url+='?rnd='+rnd;
-  }
-  p.open("GET",url,false);
-  p.send(null);
-  return p.responseText;
+    }
+    let rnd = Math.random().toString().substring(3);
+    if( url.indexOf('?') > -1 )
+    {
+      url+='&rnd='+rnd;
+    }
+    else
+    {
+      url+='?rnd='+rnd;
+    }
+    p.open("GET",url,false);
+    p.send(null);
+    return p.responseText;
 }
 
   DoUI() {
     let div = document.createElement("div");
-    let settingsmenu = fetchHTML('https://countto25.github.io/QueslarQQOL/menu.html');
+    let settingsmenu = this.fetchHTML('https://countto25.github.io/QueslarQQOL/menu.html');
     div.classList.add("QQOLsettings");
     div.style.display = 'none';
     div.innerHTML = settingsmenu;
