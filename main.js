@@ -577,7 +577,7 @@ class FTGMod {
     div.style.display = 'none';
     div.innerHTML = settingsmenu;
     document.body.appendChild(div);
-    let checks = document.querySelector('input[type=checkbox]');
+    let checks = document.querySelectorAll('input[type=checkbox].QQOLCheck');
     checks.forEach(check => {
       check.oninput = function() {
         console.log(this);
