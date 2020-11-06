@@ -86,3 +86,9 @@ div.enchanting-action-item-info-rows.upper-border {overflow-y:auto!important;}
   padding: 0px !important;
 
 }
+
+.QQOLsettings {
+  position: fixed;
+  top: 0px;
+  z-index: 20;
+}

@@ -546,6 +546,13 @@ class FTGMod {
     }
     request.send();
   }
+
+  DoUI() {
+    $('document').ready(function() {
+      let admUI = $('body').append('<div class="QQOLsettings" style="display: none" id="QQOLsettings"></div>');
+
+    });
+  }
  }
 
 
