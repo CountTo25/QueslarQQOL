@@ -103,6 +103,13 @@ class FTGMod {
    QQOLquests.id='QQOL_quests';
    QQOLquests.innerHTML = 'Loading...';
 
+
+   let QQOLTimeToTargetLevel = document.createElement('div');
+   QQOLTimeToTargetLevel.id='QQOL_TTTL';
+   if (!localStorage.targetLevel || parseInt(localStorage.QQOL_tttl_show)!=1)
+    QQOLTimeToTargetLevel.style.display = 'none';
+   QQOLTimeToTargetLevel.innerHTML = '';
+
    let timetoleveluptooltip = document.createElement('div');
    timetoleveluptooltip.id = 'QQOL_time_to_levelup';
    let idletimeremainingtooltip = document.createElement('div');
@@ -111,6 +118,8 @@ class FTGMod {
    document.getElementById('QQOL_holder').appendChild(idletimeremainingtooltip);
    document.getElementById('QQOL_holder').appendChild(timetoleveluptooltip);
    document.getElementById('QQOL_holder').appendChild(QQOLquests);
+   document.getElementById('QQOL_holder').appendChild(QQOLTimeToTargetLevel);
+
 
    //DECLARE SHIT
    this.rememberquest = null;
@@ -135,6 +144,10 @@ class FTGMod {
 
    this.CheckLatestVersion();
    this.DoUI();
+   this.SetupSettings();
+   this.ReflectSettings();
+
+
 
    console.log('loaded Quality of Quality of Life mod v'+this.ver+'. Have a nice day!');
  }
@@ -160,6 +173,7 @@ class FTGMod {
    this.TimeToCraft();
    this.TrySearchProviderUI();
    this.TimeToQuestComplete();
+   this.ReflectTimeToTargetLevel();
  }
 
  GetRemainingActions() {
@@ -327,6 +341,42 @@ class FTGMod {
 
  }
 
+ ExpToLevel() {
+   let expBank = 0;
+   let currentLevel = this.gameData.playerLevelsService.battling.level;
+   if (!localStorage.getItem('targetLevel')) return false;
+   let targetLevel = parseInt(localStorage.getItem('targetLevel'));
+   let currentExp = this.gameData.playerLevelsService.battling.exp.have;
+   if (targetLevel == 0) return false;
+   for (let i=currentLevel; i<=targetLevel; i++) {
+     let expToLevel = Math.round(25000 * Math.pow(i, 0.5));
+     let levelTemp = i;
+     while (levelTemp > 1500) {
+       expToLevel +=  250 * Math.pow((levelTemp - 1500), 1.25)
+       levelTemp -= 1500;
+     }
+     expBank+=expToLevel;
+   }
+   return expBank-currentExp;
+ }
+
+ TimeToTargetLevel() {
+   if (!localStorage.getItem('targetLevel')) {
+     return 'Time to target level: check settings';
+   }
+   let actionVal = this.gameData.playerActionService.actionResult.income.experience.amount;
+   if (!actionVal) return null;
+   let totalExpReq = this.ExpToLevel();
+   let actionsReq = Math.ceil(totalExpReq/actionVal);
+   return this.ActionsToTime(actionsReq);
+ }
+
+ ReflectTimeToTargetLevel() {
+   let div = document.getElementById('QQOL_TTTL');
+   if (!div) return;
+   div.innerHTML = this.TimeToTargetLevel();
+ }
+
  TrySearchProviderUI() {
    if (document.querySelector('.cdk-column-username.mat-column-username')&&!(document.getElementById('QQOL_service_search'))) {
      if (this.currentTab == 'enchanting' || this.currentTab == 'crafting') {
@@ -369,7 +419,8 @@ class FTGMod {
     if (remSec<10) remSec='.0'+remSec;
     else remSec='.'+remSec;
 
-   return hourval+':'+(remMinutes<10?('0'+remMinutes):(remMinutes))+remSec;
+   let dayVal = Math.floor(hourval/24);
+   return ((dayVal>0)?(dayVal+'d '):(''))+hourval%24+':'+(remMinutes<10?('0'+remMinutes):(remMinutes))+remSec;
  }
 
  CraftingServiceUI(isEnch = true) {
@@ -576,9 +627,11 @@ class FTGMod {
     div.classList.add("QQOLsettings");
     div.style.display = 'none';
     div.innerHTML = settingsmenu;
+    let modbody = this;
     document.body.appendChild(div);
     document.querySelector('#exitSettings').onclick = function() {
       document.querySelector('.QQOLsettings').style.display='none';
+      modbody.ReflectSettings();
     }
     document.querySelector('#toSettings').onclick = function() {
       document.querySelector('.QQOLsettings').style.display='block';
@@ -590,6 +643,53 @@ class FTGMod {
         console.log(this.checked?1:0);
       }
     });
+  }
+  SetupSettings() {
+    if (localStorage.getItem('QQOL_itr_show')===null) {
+      localStorage.setItem('QQOL_itr_show', 1);
+    }
+    if (localStorage.getItem('QQOL_nl_show')===null) {
+      localStorage.setItem('QQOL_nl_show', 1);
+    }
+    if (localStorage.getItem('QQOL_ttqc_show')===null) {
+      localStorage.setItem('QQOL_ttqc_show', 1);
+    }
+    if (localStorage.getItem('QQOL_itr_show') === '0') {
+      document.querySelector('input[for=itr_show]').checked = false;
+    } else {
+      document.querySelector('input[for=itr_show]').checked = true;
+    }
+    if (localStorage.getItem('QQOL_nl_show') === '0') {
+      document.querySelector('input[for=nl_show]').checked = false;
+    } else {
+      document.querySelector('input[for=nl_show]').checked = true;
+    }
+
+    if (localStorage.getItem('QQOL_ttqc_show') === '0') {
+      document.querySelector('input[for=ttqc_show]').checked = false;
+    } else {
+      document.querySelector('input[for=ttqc_show]').checked = true;
+    }
+  }
+
+  ReflectSettings() {
+    if (localStorage.getItem('QQOL_itr_show') === '0') {
+      document.querySelector('#QQOL_remaining_time').style.display = 'none';
+    } else {
+      document.querySelector('#QQOL_remaining_time').style.display = 'block';
+    }
+
+    if (localStorage.getItem('QQOL_nl_show') === '0') {
+      document.querySelector('#QQOL_time_to_levelup').style.display = 'none';
+    } else {
+      document.querySelector('#QQOL_time_to_levelup').style.display = 'block';
+    }
+
+    if (localStorage.getItem('QQOL_ttqc_show') === '0') {
+      document.querySelector('#QQOL_quests').style.display = 'none';
+    } else {
+      document.querySelector('#QQOL_quests').style.display = 'block';
+    }
   }
  }
 
