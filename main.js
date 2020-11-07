@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.45
+// @version      0.5
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -23,7 +23,7 @@
 
 class FTGMod {
  constructor() {
-   this.ver = '0.45';
+   this.ver = '0.5';
    //OBSERVERS
    var modbody = this;
    this.serviceOrders = {};
@@ -633,6 +633,11 @@ class FTGMod {
     let modbody = this;
     document.body.appendChild(div);
     document.querySelector('#exitSettings').onclick = function() {
+      document.querySelector('.QQOLsettings').style.display='none';
+      modbody.ReflectSettings();
+    }
+    document.querySelector('#contactme').onclick = function() {
+      document.querySelector('.chat-input ').value='/w FiammaTheGreat';
       document.querySelector('.QQOLsettings').style.display='none';
       modbody.ReflectSettings();
     }
