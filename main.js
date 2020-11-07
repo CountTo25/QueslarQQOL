@@ -592,10 +592,10 @@ class FTGMod {
         console.log(parseFloat(latestVersion) > parseFloat(modbody.ver));
         if ((parseFloat(latestVersion) > parseFloat(modbody.ver))) {
           let txt = 'QQOL v'+modbody.ver+'. <a target="_blank" href="https://countto25.github.io/QueslarQQOL?update=true" class="QQOL-link-action" style="color:red; text-decoration: none">Please update</a>';
-          document.querySelector('#QQOL_info').innerHTML=txt;
+          document.querySelector('#toSettings').innerHTML=txt;
         } else if (parseFloat(latestVersion) < parseFloat(modbody.ver)) {
           let txt = 'QQOL v'+modbody.ver+'. <span style="color:green; text-decoration: none">Maybe do your actual job?</span>';
-          document.querySelector('#QQOL_info').innerHTML=txt;
+          document.querySelector('#toSettings').innerHTML=txt;
         }
       } else {console.log('error getting new version :')}
     }
