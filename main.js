@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.51
+// @version      0.52
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -23,7 +23,7 @@
 
 class FTGMod {
  constructor() {
-   this.ver = '0.51';
+   this.ver = '0.52';
    //OBSERVERS
    var modbody = this;
    this.serviceOrders = {};
@@ -97,7 +97,7 @@ class FTGMod {
    let QQOLinfo = document.createElement('div');
    QQOLinfo.style.marginTop = '10px';
    QQOLinfo.id='QQOL_info';
-   QQOLinfo.innerHTML = '<span id="toSettings" class="QQOL-link-action">QQOL v'+this.ver+'</span>';
+   QQOLinfo.innerHTML = '<mat-icon class="mat-icon material-icons" style="font-size: 16px">settings</mat-icon><span id="toSettings" class="QQOL-link-action">QQOL v'+this.ver+'</span>';
 
    let QQOLquests = document.createElement('div');
    QQOLquests.id='QQOL_quests';
