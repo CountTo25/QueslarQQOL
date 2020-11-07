@@ -364,11 +364,14 @@ class FTGMod {
    if (!localStorage.getItem('targetLevel')) {
      return 'Time to target level: check settings';
    }
-   let actionVal = this.gameData.playerActionService.actionResult.income.experience.amount;
-   if (!actionVal) return null;
+   let actionVal;
+   if (this.gameData.playerActionService.actionResult.income && this.gameData.playerActionService.actionResult.income.experience.amount) {
+      actionVal = this.gameData.playerActionService.actionResult.income.experience.amount;
+   } else {return '';}
    let totalExpReq = this.ExpToLevel();
    let actionsReq = Math.ceil(totalExpReq/actionVal);
-   return this.ActionsToTime(actionsReq);
+   let tLevel = localStorage.targetLevel;
+   return 'Time to level '+tLevel+': '+this.ActionsToTime(actionsReq);
  }
 
  ReflectTimeToTargetLevel() {
@@ -643,6 +646,9 @@ class FTGMod {
         console.log(this.checked?1:0);
       }
     });
+    document.querySelector('input[for=tttl_value]').oninput = function() {
+      localStorage.setItem('targetLevel', this.value);
+    }
   }
   SetupSettings() {
     if (localStorage.getItem('QQOL_itr_show')===null) {
@@ -653,6 +659,10 @@ class FTGMod {
     }
     if (localStorage.getItem('QQOL_ttqc_show')===null) {
       localStorage.setItem('QQOL_ttqc_show', 1);
+    }
+
+    if (localStorage.getItem('QQOL_tttl_show')===null) {
+      localStorage.setItem('QQOL_tttl_show', 0);
     }
     if (localStorage.getItem('QQOL_itr_show') === '0') {
       document.querySelector('input[for=itr_show]').checked = false;
@@ -669,6 +679,17 @@ class FTGMod {
       document.querySelector('input[for=ttqc_show]').checked = false;
     } else {
       document.querySelector('input[for=ttqc_show]').checked = true;
+    }
+
+    if (localStorage.getItem('QQOL_tttl_show') === '0') {
+      document.querySelector('input[for=tttl_show]').checked = false;
+    } else {
+      document.querySelector('input[for=tttl_show]').checked = true;
+    }
+
+    let tl = (localStorage.getItem('targetLevel') || -1);
+    if (tl != -1) {
+      document.querySelector('input[for=tttl_value]').value = parseInt(tl);
     }
   }
 
@@ -689,6 +710,12 @@ class FTGMod {
       document.querySelector('#QQOL_quests').style.display = 'none';
     } else {
       document.querySelector('#QQOL_quests').style.display = 'block';
+    }
+
+    if (localStorage.getItem('QQOL_tttl_show') === '0') {
+      document.querySelector('#QQOL_TTTL').style.display = 'none';
+    } else {
+      document.querySelector('#QQOL_TTTL').style.display = 'block';
     }
   }
  }

@@ -92,3 +92,47 @@ div.enchanting-action-item-info-rows.upper-border {overflow-y:auto!important;}
   top: 0px;
   z-index: 20;
 }
+
+
+.QQOLsettings {
+    position: fixed;
+    top: 0px;
+    z-index: 20;
+    width: 100%;
+    height: 100%;
+    padding: 50px;
+    background-color: rgba(0, 0, 0, 0.47);
+}
+
+
+.QQOLsettings .centered {
+    text-align: center;
+}
+
+.QQOLsettings .block {
+    display: inline-block;
+    width: 30vw;
+    vertical-align: top;
+}
+
+.QQOLsettings .block.left {
+    text-align: left;
+}
+
+.QQOLsettings .block.center {
+}
+
+.QQOL-settings.block.right {
+
+}
+
+.QQOLsettings .main {
+    background-color: rgba(0, 0, 0, .75);
+    border-radius: 20px;
+    padding: 20px;
+    height: 100%;
+}
+
+.QQOLsettings input[type=checkbox] {
+    display: inline-block;
+}
