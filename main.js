@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.52
+// @version      0.53
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -23,7 +23,7 @@
 
 class FTGMod {
  constructor() {
-   this.ver = '0.52';
+   this.ver = '0.53';
    //OBSERVERS
    var modbody = this;
    this.serviceOrders = {};
@@ -97,7 +97,7 @@ class FTGMod {
    let QQOLinfo = document.createElement('div');
    QQOLinfo.style.marginTop = '10px';
    QQOLinfo.id='QQOL_info';
-   QQOLinfo.innerHTML = '<mat-icon class="mat-icon material-icons" style="font-size: 16px">settings</mat-icon><span id="toSettings" class="QQOL-link-action">QQOL v'+this.ver+'</span>';
+   QQOLinfo.innerHTML = '<mat-icon class="mat-icon material-icons" style="vertical-align: bottom: height: 16px; width: 16px; font-size: 16px">settings</mat-icon><span id="toSettings" class="QQOL-link-action">QQOL v'+this.ver+'</span>';
 
    let QQOLquests = document.createElement('div');
    QQOLquests.id='QQOL_quests';
@@ -348,7 +348,7 @@ class FTGMod {
    let targetLevel = parseInt(localStorage.getItem('targetLevel'));
    let currentExp = this.gameData.playerLevelsService.battling.exp.have;
    if (targetLevel == 0) return false;
-   for (let i=currentLevel; i<=targetLevel; i++) {
+   for (let i=currentLevel; i<targetLevel; i++) {
      let expToLevel = Math.round(25000 * Math.pow(i, 0.5));
      let levelTemp = i;
      while (levelTemp > 1500) {
