@@ -9,12 +9,6 @@ Adds more info to left sidebar and enchanting\crafting bar, saying how much time
 Also, allows you to search for service providers on market
 
 # Get it
-Create the bookmark containing following code, save it, click it when you're on Queslar tab
-```
-javascript:(function (){document.getElementsByTagName('head')[0].appendChild(document.createElement('script')).src='https://raw.githubusercontent.com/CountTo25/QueslarQQOL/master/main.js';}());
-```
-OR
-
 Use greasemonkey: https://greasyfork.org/scripts/411266-qqol
 # Hooks
 They dont work if you run on greasemonkey :( I'll figure smth out later
