@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.53
+// @version      0.54
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -23,7 +23,7 @@
 
 class FTGMod {
  constructor() {
-   this.ver = '0.53';
+   this.ver = '0.54';
    //OBSERVERS
    var modbody = this;
    this.serviceOrders = {};
@@ -727,28 +727,51 @@ class FTGMod {
 
     let totalProfExp = 0;
 
-    let craftLevel = this.gameData.playerLevelsService.crafting.level;
-    let expToLevel = Math.round(25000 * Math.pow(craftLevel, 0.5));
-    let levelTemp = craftLevel;
-    while (levelTemp > 1500) {
-      expToLevel +=  250 * Math.pow((levelTemp - 1500), 1.25)
-      levelTemp -= 1500;
+    let crftLevel = this.gameData.playerLevelsService.crafting.level;
+    let totalCrftExp = 0;
+    for (let i=1; i<crftLevel; i++) {
+      let expToLevel = Math.round(25000 * Math.pow(i, 0.5));
+      let levelTemp = i;
+      while (levelTemp > 1500) {
+        expToLevel +=  250 * Math.pow((levelTemp - 1500), 1.25)
+        levelTemp -= 1500;
+      }
+      totalCrftExp +=expToLevel;
     }
 
-    totalProfExp += expToLevel + this.gameData.playerLevelsService.crafting.exp;
-
-    let enchLevel = this.gameData.playerLevelsService.crafting.level;
-    expToLevel = Math.round(25000 * Math.pow(enchLevel, 0.5));
-    levelTemp = enchLevel;
-    while (levelTemp > 1500) {
-      expToLevel +=  250 * Math.pow((levelTemp - 1500), 1.25)
-      levelTemp -= 1500;
+    let enchLevel = this.gameData.playerLevelsService.enchanting.level;
+    let totalEnchExp = 0;
+    for (let i=1; i<enchLevel; i++) {
+      let expToLevel = Math.round(25000 * Math.pow(i, 0.5));
+      let levelTemp = i;
+      while (levelTemp > 1500) {
+        expToLevel +=  250 * Math.pow((levelTemp - 1500), 1.25)
+        levelTemp -= 1500;
+      }
+      totalEnchExp +=expToLevel;
     }
 
-    totalProfExp += expToLevel + this.gameData.playerLevelsService.enchanting.exp;
+    totalProfExp += totalEnchExp + this.gameData.playerLevelsService.enchanting.exp.have;
+    totalProfExp += totalCrftExp + this.gameData.playerLevelsService.crafting.exp.have;
 
-    document.querySelector('#QQOL-craftingexp').innerHTML = totalProfExp;
-    
+    document.querySelector('#QQOL-craftingexp').innerHTML = Intl.NumberFormat('ru-RU').format(totalProfExp);
+    document.querySelector('#QQOL-postpatch').innerHTML = this.AdvanceFromCurrent(totalProfExp);
+
+  }
+
+  AdvanceFromCurrent(exp) {
+    let projectedLevel = this.gameData.playerLevelsService.battling.level;
+    while (exp > 0) {
+      let expToLevel = Math.round(25000 * Math.pow(projectedLevel, 0.5));
+      let levelTemp = projectedLevel;
+      while (levelTemp > 1500) {
+        expToLevel +=  250 * Math.pow((levelTemp - 1500), 1.25)
+        levelTemp -= 1500;
+      }
+      projectedLevel++;
+      exp-=expToLevel;
+    }
+    return projectedLevel;
   }
  }
 
