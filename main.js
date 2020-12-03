@@ -722,6 +722,33 @@ class FTGMod {
     } else {
       document.querySelector('#QQOL_TTTL').style.display = 'block';
     }
+
+    document.querySelector('#QQOL-currentlevel').innerHTML = this.gameData.playerLevelsService.battling.level;
+
+    let totalProfExp = 0;
+
+    let craftLevel = this.gameData.playerLevelsService.crafting.level;
+    let expToLevel = Math.round(25000 * Math.pow(craftLevel, 0.5));
+    let levelTemp = craftLevel;
+    while (levelTemp > 1500) {
+      expToLevel +=  250 * Math.pow((levelTemp - 1500), 1.25)
+      levelTemp -= 1500;
+    }
+
+    totalProfExp += expToLevel + this.gameData.playerLevelsService.crafting.exp;
+
+    let enchLevel = this.gameData.playerLevelsService.crafting.level;
+    expToLevel = Math.round(25000 * Math.pow(enchLevel, 0.5));
+    levelTemp = enchLevel;
+    while (levelTemp > 1500) {
+      expToLevel +=  250 * Math.pow((levelTemp - 1500), 1.25)
+      levelTemp -= 1500;
+    }
+
+    totalProfExp += expToLevel + this.gameData.playerLevelsService.enchanting.exp;
+
+    document.querySelector('#QQOL-craftingexp').innerHTML = totalProfExp;
+    
   }
  }
 
