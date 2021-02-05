@@ -135,13 +135,9 @@ class FTGMod {
    this.HookOnAction(() => {modbody.Update()});
    this.HookOnAction(() => {if (modbody.rememberquest!=null && document.title.split(' - ')[1]!='Party') modbody.rememberquest--;});
    this.HookOnAction(() => {if (modbody.updateInterval == null) {modbody.updateInterval = setInterval(() => {modbody.Update()}, 100)}});
-   this.HookOnAction(() => {if (this.currentTab == 'enchanting' ) {this.CraftingServiceUI()}});
-   this.HookOnAction(() => {if (this.currentTab == 'crafting' ) {this.CraftingServiceUI(false)}});
    this.HookOnAction(() => this.IncomePerHour());
 
    this.HookOnTab((x) => {console.log(x)});
-   this.HookOnTab((x) => {if (x==='enchanting'||x==='crafting') modbody.Update()});
-   this.HookOnTab((x) => {if (x==='enchanting'||x==='crafting') modbody.CraftingServiceUI()});
    this.HookOnTab((x) => {modbody.activetab = x});
    this.HookOnTab((x) => {if (x==='battle') this.BlockActionsOnOvercap()});
 
