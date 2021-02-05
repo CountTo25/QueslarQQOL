@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.54
+// @version      0.6
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -23,7 +23,7 @@
 
 class FTGMod {
  constructor() {
-   this.ver = '0.54';
+   this.ver = '0.6';
    //OBSERVERS
    var modbody = this;
    this.serviceOrders = {};
@@ -103,6 +103,10 @@ class FTGMod {
    QQOLquests.id='QQOL_quests';
    QQOLquests.innerHTML = 'Loading...';
 
+   let QQOLkdexp = document.createElement('div');
+   QQOLkdexp.id='QQOL_kingdomexploration';
+   QQOLkdexp.innerHTML = '';
+
 
    let QQOLTimeToTargetLevel = document.createElement('div');
    QQOLTimeToTargetLevel.id='QQOL_TTTL';
@@ -119,6 +123,7 @@ class FTGMod {
    document.getElementById('QQOL_holder').appendChild(timetoleveluptooltip);
    document.getElementById('QQOL_holder').appendChild(QQOLquests);
    document.getElementById('QQOL_holder').appendChild(QQOLTimeToTargetLevel);
+   document.getElementById('QQOL_holder').appendChild(QQOLkdexp);
 
 
    //DECLARE SHIT
@@ -234,6 +239,21 @@ class FTGMod {
    }
    if (document.getElementById('QQOL_remaining_time'))
     document.getElementById('QQOL_remaining_time').innerHTML=txt;
+ }
+
+ explorationTimer()
+ {
+     //rootElement.playerGeneralService.playerKingdomService.kingdomData.selectedExploration
+
+     let exploration = this.gameData.playerKingdomService.kingdomData.selectedExploration;
+     let timetoend = new Date(exploration.exploration_timer);
+     timetoend = Math.floor(timetoend.getTime() / 1000);
+     let now = new Date();
+     now = Math.floor(now.getTime() / 1000);
+
+     let diff = timetoend - now;
+     let time = this.SecondsToString(diff);
+     document.querySelector('#QQOLkdexp').innerHTML = time;
  }
 
  TimeToCraft() {
@@ -669,6 +689,10 @@ class FTGMod {
     if (localStorage.getItem('QQOL_tttl_show')===null) {
       localStorage.setItem('QQOL_tttl_show', 0);
     }
+    if (localStorage.getItem('QQOL_ttke_show')===null) {
+        localStorage.setItem('QQOL_ttke_show', 0);
+    }
+
     if (localStorage.getItem('QQOL_itr_show') === '0') {
       document.querySelector('input[for=itr_show]').checked = false;
     } else {
@@ -690,6 +714,12 @@ class FTGMod {
       document.querySelector('input[for=tttl_show]').checked = false;
     } else {
       document.querySelector('input[for=tttl_show]').checked = true;
+    }
+
+    if (localStorage.getItem('QQOL_ttke_show') === '0') {
+      document.querySelector('input[for=ttke_show]').checked = false;
+    } else {
+      document.querySelector('input[for=ttke_show]').checked = true;
     }
 
     let tl = (localStorage.getItem('targetLevel') || -1);
@@ -715,6 +745,12 @@ class FTGMod {
       document.querySelector('#QQOL_quests').style.display = 'none';
     } else {
       document.querySelector('#QQOL_quests').style.display = 'block';
+    }
+
+    if (localStorage.getItem('QQOL_ttke_show') === '0') {
+      document.querySelector('#QQOL_kingdomexploration').style.display = 'none';
+    } else {
+      document.querySelector('#QQOL_kingdomexploration').style.display = 'block';
     }
 
     if (localStorage.getItem('QQOL_tttl_show') === '0') {
@@ -778,8 +814,18 @@ class FTGMod {
 
 //TY GREASEMONKEY
 var QQOL = null;
-var QQOLSetupInterval = setInterval(QQOLGMSetup, 100);
+console.log('init load');
+var QQOLSetupInterval = setInterval(QQOLGMSetup, 1000);
 function QQOLGMSetup() {
-  if (document.getElementById('profile-next-level')&&QQOL===null) {QQOL = new FTGMod(); clearInterval(QQOLSetupInterval); window.QQOL = QQOL;}
+  if (document.getElementById('profile-next-level')&&QQOL===null) {
+    console.log('load OK');
+    clearInterval(QQOLSetupInterval);
+    console.log(QQOLSetupInterval+'');
+    QQOL = new FTGMod();
+
+  } else {
+    console.log('retry init...');
+    console.log('next level?'+document.getElementById('profile-next-level'));
+    console.log((document.getElementById('profile-next-level')&&QQOL===null));
+  }
 }
-QQOLGMSetup();
