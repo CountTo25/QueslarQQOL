@@ -179,6 +179,7 @@ class FTGMod {
    this.TrySearchProviderUI();
    this.TimeToQuestComplete();
    this.ReflectTimeToTargetLevel();
+   this.explorationTimer();
  }
 
  GetRemainingActions() {
@@ -245,6 +246,18 @@ class FTGMod {
  {
      //rootElement.playerGeneralService.playerKingdomService.kingdomData.selectedExploration
 
+     if (!this.gameData.playerKingdomService.isInKingdom) {
+         return;
+     }
+
+     if (!this.gameData.playerKingdomService.kingdomData) {
+         return;
+     }
+
+     if (!this.gameData.playerKingdomService.kingdomData.selectedExploration) {
+         return;
+     }
+
      let exploration = this.gameData.playerKingdomService.kingdomData.selectedExploration;
      let timetoend = new Date(exploration.exploration_timer);
      timetoend = Math.floor(timetoend.getTime() / 1000);
@@ -253,7 +266,7 @@ class FTGMod {
 
      let diff = timetoend - now;
      let time = this.SecondsToString(diff);
-     document.querySelector('#QQOLkdexp').innerHTML = time;
+     document.querySelector('#QQOL_kingdomexploration').innerHTML = 'KD exploration: '+time;
  }
 
  TimeToCraft() {
@@ -758,40 +771,6 @@ class FTGMod {
     } else {
       document.querySelector('#QQOL_TTTL').style.display = 'block';
     }
-
-    document.querySelector('#QQOL-currentlevel').innerHTML = this.gameData.playerLevelsService.battling.level;
-
-    let totalProfExp = 0;
-
-    let crftLevel = this.gameData.playerLevelsService.crafting.level;
-    let totalCrftExp = 0;
-    for (let i=1; i<crftLevel; i++) {
-      let expToLevel = Math.round(25000 * Math.pow(i, 0.5));
-      let levelTemp = i;
-      while (levelTemp > 1500) {
-        expToLevel +=  250 * Math.pow((levelTemp - 1500), 1.25)
-        levelTemp -= 1500;
-      }
-      totalCrftExp +=expToLevel;
-    }
-
-    let enchLevel = this.gameData.playerLevelsService.enchanting.level;
-    let totalEnchExp = 0;
-    for (let i=1; i<enchLevel; i++) {
-      let expToLevel = Math.round(25000 * Math.pow(i, 0.5));
-      let levelTemp = i;
-      while (levelTemp > 1500) {
-        expToLevel +=  250 * Math.pow((levelTemp - 1500), 1.25)
-        levelTemp -= 1500;
-      }
-      totalEnchExp +=expToLevel;
-    }
-
-    totalProfExp += totalEnchExp + this.gameData.playerLevelsService.enchanting.exp.have;
-    totalProfExp += totalCrftExp + this.gameData.playerLevelsService.crafting.exp.have;
-
-    document.querySelector('#QQOL-craftingexp').innerHTML = Intl.NumberFormat('ru-RU').format(totalProfExp);
-    document.querySelector('#QQOL-postpatch').innerHTML = this.AdvanceFromCurrent(totalProfExp);
 
   }
 
