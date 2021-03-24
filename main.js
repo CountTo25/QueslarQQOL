@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    http://tampermonkey.net/
-// @version      0.62
+// @version      0.63
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -18,12 +18,16 @@
 ////
 
 
+//0.63
+// rootElement.playerCurrencyService.gem_fragments
+//
+
 //QQOL.gameData.marketService.serviceOrders
 //
 
 class FTGMod {
  constructor() {
-   this.ver = '0.62';
+   this.ver = '0.63';
    //OBSERVERS
    var modbody = this;
    this.serviceOrders = {};
@@ -171,7 +175,6 @@ class FTGMod {
  Update() {
    this.TimeRemaining();
    this.TimeToLevelUp();
-   this.TimeToCraft();
    this.TrySearchProviderUI();
    this.TimeToQuestComplete();
    this.ReflectTimeToTargetLevel();
@@ -223,7 +226,7 @@ class FTGMod {
    let txt ='Idle time remaining: '+this.ActionsToTime(actionsRemaining);
    let playerId = this.gameData.gameService.playerData.id;
    if (this.gameData.partyService.hasParty) {
-    let partyActionsRemaining = this.gameData.partyService.partyInformation[playerId].actions.daily_actions_remaining;
+    let partyActionsRemaining = this.gameData.partyService.partyOverview.partyInformation[playerId].actions.daily_actions_remaining;
     actionsRemaining += partyActionsRemaining;
     //<span class="QQOL-tooltip">
     txt ='<span class="QQOL-tooltip"><span class="QQOL-tooltiptext">'
@@ -263,25 +266,6 @@ class FTGMod {
      let diff = timetoend - now;
      let time = this.SecondsToString(diff);
      document.querySelector('#QQOL_kingdomexploration').innerHTML = 'KD exploration: '+time;
- }
-
- TimeToCraft() {
-   if (this.currentTab === 'enchanting' || this.currentTab==='craft') {
-     if (document.querySelector('.progress-bar-text')) {
-       let txt = document.querySelector('.progress-bar-text').innerHTML;
-       if (!document.getElementById('FTG_time_to_craft')) {
-         let TTCelement = document.createElement('span');
-         TTCelement.id = 'FTG_time_to_craft';
-         document.querySelector('.progress-bar-text').appendChild(TTCelement);
-       }
-       let actionVal = parseInt(txt.split(' / ')[1].split(' ')[0]) - parseInt(txt.split(' / ')[0]);
-       let chantBonus = (this.currentTab === 'enchanting')?this.myEquipmentData.enchanting:this.myEquipmentData.crafting;
-       if (isNaN(chantBonus)) chantBonus = 0;
-       let speed = 1+chantBonus;
-       let estActionVal = Math.floor(actionVal/speed)
-       document.getElementById('FTG_time_to_craft').innerHTML = '(~'+this.ActionsToTime(estActionVal)+')';
-     }
-   }
  }
 
  GetSeconds(actions) {
@@ -455,108 +439,6 @@ class FTGMod {
    return ((dayVal>0)?(dayVal+'d '):(''))+hourval%24+':'+(remMinutes<10?('0'+remMinutes):(remMinutes))+remSec;
  }
 
- CraftingServiceUI(isEnch = true) {
-
-   let drawFrom = isEnch?this.gameData.playerEnchantingService : this.gameData.playerCraftingService;
-   if (!(this.gameData.playerEnchantingService.isEnchanting||this.gameData.playerCraftingService.isCrafting)) return 'eh';
-   let serviceData = drawFrom.serviceData;
-   let dataHolder;
-   let chantBonus = isEnch?this.myEquipmentData.enchanting:this.myEquipmentData.crafting;
-   if (isNaN(chantBonus)) chantBonus = 0;
-   let speed = 1+chantBonus;
-   if (!document.querySelector('#QQOL_service_window')) {
-     let objClass = 'app-'+(isEnch?'enchanting':'craft');
-     let insertWhere;
-     if (document.querySelector(objClass + ' .action-progress')) {
-     insertWhere = document.querySelector('.'+(isEnch?'enchanting':'crafting')+'-action-blocks').parentNode;
-   } else {
-     insertWhere = document.querySelector(objClass);
-   }
-     dataHolder = document.createElement('div');
-     dataHolder.id='QQOL_service_window';
-     dataHolder.style.width='25%';
-     dataHolder.classList.add('grid-item');
-     dataHolder.style.border='var(--main-border-color)';
-     dataHolder.style.borderRadius='10px';
-     dataHolder.style.marginLeft='5px';
-     dataHolder.style.marginRight='5px';
-     dataHolder.style.height='max-content';
-     if (insertWhere)
-      insertWhere.appendChild(dataHolder);
-   } else {
-     dataHolder = document.querySelector('#QQOL_service_window');
-   }
-   let title = serviceData.listings.length > 0 ? 'Your upcoming orders:' : 'No orders in your queue :(';
-   dataHolder.innerHTML = '<div class="main-color under-menu-title"><span>'+title+'</span></div>';
-    dataHolder.innerHTML+='<div id="QQOL_service_list" style="overflow-y: scroll; height: 150px; padding-left: 5px; text-align:left"></div>';
-    dataHolder = document.querySelector('#QQOL_service_list');
-   let queueTime = 0;
-   let currentData = isEnch?this.gameData.playerEnchantingService:this.gameData.playerCraftingService;
-   let totalRelics = 0;
-   if (currentData.isEnchanting||currentData.isCrafting) {
-     let source = (isEnch?currentData.craftedEnchant:currentData.craftedEquipment);
-     let currentRem = source.crafted_actions_required - source.crafted_actions_done;
-     queueTime = Math.floor((currentRem) /speed)*6;
-   }
-
-   let q = this.gameData.playerQueueService['player'+(isEnch?'Enchanting':'Crafting')+'Queue'];
-   if (q.length>0) {
-     for (let i=0; i<q.length; i++) {
-       //not sure if the formula is right, shoutout   to dude who didnt want to be shoutouted lol
-       //round(N5^0.5*4*3)
-       //whoever did that formula, shout out to you. Contact me, i'll reference ya
-       let formula = 0;
-       if (isEnch)
-        formula = Math.ceil(Math.pow(q[i].level_requirement,0.5)*((q[i].item_rarity+1)/2)*3);
-       else
-        formula = Math.ceil(Math.pow(q[i].level_requirement/2, 0.5)*(Math.pow(5, 0.5)+(q[i].item_rarity+1)/2)*3);
-       //look up into whats this
-       //=ROUND(($C$5/2)^0.5*(5^0.5+switch($C$8,"Relic",4,"Unique",3.5,"Magical",3))*3)
-       //whoever did that formula, shout out to you. Contact me, i'll reference ya
-       console.log('adding actions: '+formula/speed+'('+formula/speed*6+')');
-       queueTime+=(formula/speed)*6;
-     }
-   }
-   let totalOrders = 0;
-   let relativeOrders = 0;
-   for (let i = 0; i<serviceData.listings.length; i++) {
-     let txt = '';
-     let listing = serviceData.listings[i];
-     totalRelics+=(listing.price_type=='flat'?listing.price_value:listing.price_value*listing.crafted_actions_required);
-     let remActions = listing.crafted_actions_required;
-     console.log(speed+'?')
-     let timer = Math.floor(listing.crafted_actions_required / speed)*6;
-     txt+='<p style="margin-bottom: 0px;">In '+this.SecondsToString(queueTime)+': ';
-     queueTime+=timer;
-     totalOrders++;
-     if (this.IsPlayerRelated(listing.buyerUsername))
-      relativeOrders++;
-
-
-     if (this.IsPlayerRelated(listing.buyerUsername)) {
-        txt+='<span class="QQOL-tooltip" style="color: var(--main-color)">'+listing.buyerUsername+'<span class="QQOL-tooltiptext">Your party, village or kingdom member</span></span>, '+listing.price_value+(listing.price_type=='flat'?' flat':'/action')+'</p>';
-     } else {
-        txt+='<span>'+listing.buyerUsername+'</span>, '+listing.price_value+(listing.price_type=='flat'?' flat':'/action')+'</p>';
-     }
-     dataHolder.innerHTML+=txt;
-   }
-   dataHolder=document.querySelector('#QQOL_service_window');
-   let footer = '';
-   footer+='<div class="main-color under-menu-title" style="border-radius: 0px; border-bottom: 1px solid var(--menu-background-color)"><p style="margin-bottom: 0px">';
-   footer+='Total orders: '+totalOrders;
-   if (relativeOrders>0) {
-      footer+=', '+relativeOrders+' from relatives';
-   }
-   footer+='</p></div>';
-   footer+='<div class="main-color under-menu-title" style="border-radius: 0px"><p style="margin-bottom: 0px">Total relics: '+totalRelics.toLocaleString()+'</p></div>';
-   let hVal = Math.floor(((queueTime % 31536000) % 86400) / 3600);
-   let split = (Math.floor(totalRelics/hVal*10)/10);
-   let output = 'Clean RPH: '+(split/10*2) + '</br>Broken RPH: '+(split/10*8);
-   footer+='<div class="main-color under-menu-title" style="border-radius: 0px 0px 8px 8px"><p style="margin-bottom: 0px">RPH: <span class="QQOL-tooltip">'+(Math.floor(totalRelics/hVal*10)/10).toLocaleString()+'<span class="QQOL-tooltiptext">'+output+'</span></span></p></div>';
-   if(dataHolder)
-    dataHolder.innerHTML+=footer;
- }
-
 
 
  SecondsToString(seconds)
@@ -574,28 +456,7 @@ class FTGMod {
 
  get myEquipmentData() {
    let myID = this.gameData.gameService.playerData.id;
-   return this.gameData.partyService.partyInformation[myID].equipment;
- }
- get playerRelatives() {
-   let relatives = [];
-   if (this.gameData.playerKingdomService.isInKingdom) {
-    this.gameData.playerKingdomService.kingdomData.village.forEach((village) => {
-       village.members.forEach((member) => {
-         relatives.push(member.username);
-       });
-     });
-   } else if (this.gameData.playerVillageService.isInVillage) {
-     this.gameData.playerVillageService.general.members.forEach((member) => {
-       relatives.push(member.username);
-     });
-   }
-   if (this.gameData.partyService.hasParty) {
-     for (let member in this.gameData.partyService.partyInformation) {
-       if (!relatives.includes(this.gameData.partyService.partyInformation[member].player.username))
-        relatives.push(this.gameData.partyService.partyInformation[member].player.username);
-     }
-   }
-   return relatives;
+   return this.gameData.partyService.partyOverview.partyInformation[myID].equipment;
  }
 
   IsPlayerRelated(name) {
