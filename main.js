@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         QQOL
-// @namespace    http://tampermonkey.net/
+// @namespace    countto25.queslar.qqol
 // @version      0.63
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
@@ -17,13 +17,6 @@
 //      storage = rootElement.playerGeneralService;
 ////
 
-
-//0.63
-// rootElement.playerCurrencyService.gem_fragments
-//
-
-//QQOL.gameData.marketService.serviceOrders
-//
 
 class FTGMod {
  constructor() {
@@ -166,47 +159,78 @@ class FTGMod {
    this.ontabhooks.push(func);
  }
 
- get gameData() {
-   let rootElement = getAllAngularRootElements()[0].children[1]["__ngContext__"][30];
-   return rootElement.playerGeneralService;
-
- }
-
- Update() {
-   this.TimeRemaining();
-   this.TimeToLevelUp();
-   this.TrySearchProviderUI();
-   this.TimeToQuestComplete();
-   this.ReflectTimeToTargetLevel();
-   this.explorationTimer();
- }
-
- GetRemainingActions() {
-   return this.gameData.playerActionService.actions.remaining;
- }
-
  OnNewAction() {
    for (let i=0; i<this.onactionhooks.length; i++) {
      this.onactionhooks[i]();
    }
  }
-
  OnNewTab(tname) {
    for (let i=0; i<this.ontabhooks.length; i++) {
      this.ontabhooks[i](tname);
    }
  }
 
- CreateTimerWindow() {
-   if (document.querySelector('.h5.mt-1')) {
-     let timerelement = document.createElement('span');
-    timerelement.id = 'FTG_idle_timer';
-    timerelement.classList.add('h5');
-    timerelement.setAttribute('style','margin-top: .25rem !important;');
-    document.querySelector('.h5.mt-1').parentNode.insertBefore(timerelement,document.querySelector('.h5.mt-1'))
+  CheckLatestVersion() {
+    let modbody = this;
+    var request = new XMLHttpRequest();
+    request.open('GET', 'https://api.github.com/repos/countto25/queslarqqol/tags', true);
+    request.onload = function() {
+      if (request.status >= 200 && request.status < 400) {
+        var data = JSON.parse(request.responseText);
+        console.log(data);
+        let latestVersion = data[1].name;
+        console.log(parseFloat(latestVersion) + ' vs ' +parseFloat(modbody.ver));
+        console.log(modbody.ver);
+        console.log(parseFloat(latestVersion) > parseFloat(modbody.ver));
+        if ((parseFloat(latestVersion) > parseFloat(modbody.ver))) {
+          let txt = 'QQOL v'+modbody.ver+'. <a target="_blank" href="https://countto25.github.io/QueslarQQOL?update=true" class="QQOL-link-action" style="color:red; text-decoration: none">Please update</a>';
+          document.querySelector('#toSettings').innerHTML=txt;
+        } else if (parseFloat(latestVersion) < parseFloat(modbody.ver)) {
+          let txt = 'QQOL v'+modbody.ver+'. <span style="color:green; text-decoration: none">Maybe do your actual job?</span>';
+          document.querySelector('#toSettings').innerHTML=txt;
+        }
+      } else {console.log('error getting new version :')}
+    }
+    request.send();
   }
- }
+  
+ get gameData() {
+   let rootElement = getAllAngularRootElements()[0].children[1]["__ngContext__"][30];
+   return rootElement.playerGeneralService;
 
+ }
+ 
+ 
+ SecondsToString(seconds)
+{
+  var numyears = Math.floor(seconds / 31536000);
+  var numdays = Math.floor((seconds % 31536000) / 86400);
+  var numhours = Math.floor(((seconds % 31536000) % 86400) / 3600);
+  var numminutes = Math.floor((((seconds % 31536000) % 86400) % 3600) / 60);
+  var numseconds = Math.floor((((seconds % 31536000) % 86400) % 3600) % 60);
+  return numhours.toString().padStart(2, '0') + ":" + numminutes.toString().padStart(2, '0') + "." + numseconds.toString().padStart(2, '0');
+}
+
+ ActionsToTime(actions) {
+   if (actions<0) return '00:00';
+   let minval = Math.floor(actions/10);
+   let hourval = Math.floor(minval/60);
+   let remMinutes = minval%60;
+   let remSeconds = actions/10
+   let subSeconds =  this.gameData.partyService.isFighting?this.gameData.partyService.countDown:this.gameData.playerActionService.countDown;
+   if ((actions*6%60) - (6-subSeconds)  < 0)
+    remMinutes--;
+
+    let remSec = actions*6%60;
+    let a = 6-subSeconds;
+    if (remSec-a<0) {remSec=remSec+60-a} else {remSec = remSec-a;}
+    if (remSec<10) remSec='.0'+remSec;
+    else remSec='.'+remSec;
+
+   let dayVal = Math.floor(hourval/24);
+   return ((dayVal>0)?(dayVal+'d '):(''))+hourval%24+':'+(remMinutes<10?('0'+remMinutes):(remMinutes))+remSec;
+ }
+ 
  BlockActionsOnOvercap() {
    return '';
    //find smth to do with issue
@@ -219,6 +243,42 @@ class FTGMod {
      document.querySelector('[joyridestep="startingTutorialSix"]').style.pointerEvents = 'unset';
      document.querySelector('[joyridestep="startingTutorialSix"]').innerHTML = 'Fight';
    }
+ }
+ 
+ IncomePerHour() {
+  let infospan;
+  let subname = (this.currentTab == 'party')?'p':'s'
+  if (!document.querySelector('#QQOL_GEPH_'+subname)) {
+    let appendTo = document.querySelector('.action-result-value-container');
+    infospan = document.createElement('div');
+    infospan.style.marginTop = '10px';
+    infospan.id='QQOL_GEPH_'+subname;
+    if (appendTo)
+      appendTo.appendChild(infospan);
+  } else {
+    infospan = document.querySelector('#QQOL_GEPH_'+subname);
+  }
+  if (this.currentTab == 'party') {
+    if (Object.keys(this.gameData.partyService.actionResult).length!=0) {
+      let exp = this.gameData.partyService.actionResult.income.experience.amount;
+      let gold = this.gameData.partyService.actionResult.income.gold.amount;
+      infospan.innerHTML = `(<span class='QQOL-tooltip'>${(gold*600).toLocaleString()} gold and ${(exp*600).toLocaleString()} experience per hour<span class='QQOL-tooltiptext'>Unless you die</span></span>)`;
+    }
+  } else {
+    if (Object.keys(this.gameData.playerActionService.actionResult).length!=0) {
+      let exp = this.gameData.playerActionService.actionResult.income.experience.amount;
+      let gold = this.gameData.playerActionService.actionResult.income.gold.amount;
+      infospan.innerHTML = `(<span class='QQOL-tooltip'>${(gold*600).toLocaleString()} gold and ${(exp*600).toLocaleString()} experience per hour<span class='QQOL-tooltiptext'>Unless you die</span></span>)`;
+    }
+  }
+ }
+ 
+ Update() {
+   this.TimeRemaining();
+   this.TimeToLevelUp();
+   this.TimeToQuestComplete();
+   this.ReflectTimeToTargetLevel();
+   this.explorationTimer();
  }
 
  TimeRemaining() {
@@ -267,39 +327,6 @@ class FTGMod {
      let time = this.SecondsToString(diff);
      document.querySelector('#QQOL_kingdomexploration').innerHTML = 'KD exploration: '+time;
  }
-
- GetSeconds(actions) {
-   return '';
- }
-
- IncomePerHour() {
-  let infospan;
-  let subname = (this.currentTab == 'party')?'p':'s'
-  if (!document.querySelector('#QQOL_GEPH_'+subname)) {
-    let appendTo = document.querySelector('.action-result-value-container');
-    infospan = document.createElement('div');
-    infospan.style.marginTop = '10px';
-    infospan.id='QQOL_GEPH_'+subname;
-    if (appendTo)
-      appendTo.appendChild(infospan);
-  } else {
-    infospan = document.querySelector('#QQOL_GEPH_'+subname);
-  }
-  if (this.currentTab == 'party') {
-    if (Object.keys(this.gameData.partyService.actionResult).length!=0) {
-      let exp = this.gameData.partyService.actionResult.income.experience.amount;
-      let gold = this.gameData.partyService.actionResult.income.gold.amount;
-      infospan.innerHTML = `(<span class='QQOL-tooltip'>${(gold*600).toLocaleString()} gold and ${(exp*600).toLocaleString()} experience per hour<span class='QQOL-tooltiptext'>Unless you die</span></span>)`;
-    }
-  } else {
-    if (Object.keys(this.gameData.playerActionService.actionResult).length!=0) {
-      let exp = this.gameData.playerActionService.actionResult.income.experience.amount;
-      let gold = this.gameData.playerActionService.actionResult.income.gold.amount;
-      infospan.innerHTML = `(<span class='QQOL-tooltip'>${(gold*600).toLocaleString()} gold and ${(exp*600).toLocaleString()} experience per hour<span class='QQOL-tooltiptext'>Unless you die</span></span>)`;
-    }
-  }
- }
-
 
  TimeToQuestComplete() {
    let txt;
@@ -393,104 +420,9 @@ class FTGMod {
    div.innerHTML = this.TimeToTargetLevel();
  }
 
- TrySearchProviderUI() {
-   if (document.querySelector('.cdk-column-username.mat-column-username')&&!(document.getElementById('QQOL_service_search'))) {
-     if (this.currentTab == 'enchanting' || this.currentTab == 'crafting') {
-       let serviceSearchBar = document.createElement('input');
-       serviceSearchBar.id = 'QQOL_service_search';
-       serviceSearchBar.placeholder='Find service provider by name';
-       serviceSearchBar.classList.add('QQOL-searchbar');
-       serviceSearchBar.addEventListener('input', ()=>{this.FindProvider()});
-       let insertBefore = document.querySelector('.mat-table.cdk-table.mat-elevation-z8');
-       insertBefore.parentNode.insertBefore(serviceSearchBar,insertBefore)
-    }
-   }
-   //on services tab
+ GetRemainingActions() {
+   return this.gameData.playerActionService.actions.remaining;
  }
-
- FindProvider() {
-   let sTerm = document.getElementById('QQOL_service_search').value.toLowerCase();
-   let users = document.querySelectorAll('td.cdk-column-username.mat-column-username > div');
-   for (let i=0; i<users.length; i++) {
-     if (users[i].innerHTML.toLowerCase().includes(sTerm)) {
-       users[i].parentNode.parentNode.removeAttribute('style');
-     } else {
-       users[i].parentNode.parentNode.style.display='none'
-     }
-   }
- }
- ActionsToTime(actions) {
-   if (actions<0) return '00:00';
-   let minval = Math.floor(actions/10);
-   let hourval = Math.floor(minval/60);
-   let remMinutes = minval%60;
-   let remSeconds = actions/10
-   let subSeconds =  this.gameData.partyService.isFighting?this.gameData.partyService.countDown:this.gameData.playerActionService.countDown;
-   if ((actions*6%60) - (6-subSeconds)  < 0)
-    remMinutes--;
-
-    let remSec = actions*6%60;
-    let a = 6-subSeconds;
-    if (remSec-a<0) {remSec=remSec+60-a} else {remSec = remSec-a;}
-    if (remSec<10) remSec='.0'+remSec;
-    else remSec='.'+remSec;
-
-   let dayVal = Math.floor(hourval/24);
-   return ((dayVal>0)?(dayVal+'d '):(''))+hourval%24+':'+(remMinutes<10?('0'+remMinutes):(remMinutes))+remSec;
- }
-
-
-
- SecondsToString(seconds)
-{
-  var numyears = Math.floor(seconds / 31536000);
-  var numdays = Math.floor((seconds % 31536000) / 86400);
-  var numhours = Math.floor(((seconds % 31536000) % 86400) / 3600);
-  var numminutes = Math.floor((((seconds % 31536000) % 86400) % 3600) / 60);
-  var numseconds = Math.floor((((seconds % 31536000) % 86400) % 3600) % 60);
-  return numhours.toString().padStart(2, '0') + ":" + numminutes.toString().padStart(2, '0') + "." + numseconds.toString().padStart(2, '0');
-}
-
-
-
-
- get myEquipmentData() {
-   let myID = this.gameData.gameService.playerData.id;
-   return this.gameData.partyService.partyOverview.partyInformation[myID].equipment;
- }
-
-  IsPlayerRelated(name) {
-    if (this.playerRelatives.includes(name))
-      return true;
-    else
-      return false;
- }
-
-
-
-  CheckLatestVersion() {
-    let modbody = this;
-    var request = new XMLHttpRequest();
-    request.open('GET', 'https://api.github.com/repos/countto25/queslarqqol/tags', true);
-    request.onload = function() {
-      if (request.status >= 200 && request.status < 400) {
-        var data = JSON.parse(request.responseText);
-        console.log(data);
-        let latestVersion = data[1].name;
-        console.log(parseFloat(latestVersion) + ' vs ' +parseFloat(modbody.ver));
-        console.log(modbody.ver);
-        console.log(parseFloat(latestVersion) > parseFloat(modbody.ver));
-        if ((parseFloat(latestVersion) > parseFloat(modbody.ver))) {
-          let txt = 'QQOL v'+modbody.ver+'. <a target="_blank" href="https://countto25.github.io/QueslarQQOL?update=true" class="QQOL-link-action" style="color:red; text-decoration: none">Please update</a>';
-          document.querySelector('#toSettings').innerHTML=txt;
-        } else if (parseFloat(latestVersion) < parseFloat(modbody.ver)) {
-          let txt = 'QQOL v'+modbody.ver+'. <span style="color:green; text-decoration: none">Maybe do your actual job?</span>';
-          document.querySelector('#toSettings').innerHTML=txt;
-        }
-      } else {console.log('error getting new version :')}
-    }
-    request.send();
-  }
 
   fetchHTML(url) {
     if( 'undefined' == typeof(url) ) return false;
