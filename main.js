@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    countto25.queslar.qqol
-// @version      0.63
+// @version      0.64
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -20,60 +20,16 @@
 
 class FTGMod {
  constructor() {
-   this.ver = '0.63';
-   //OBSERVERS
+   this.ver = '0.64';
+
+
+        // Setup/loading.
+        this.setupObservers();
+        
    var modbody = this;
-   this.serviceOrders = {};
-   this.newActionObserver = new MutationObserver(function(mutations) {
-     mutations.forEach(function(mutation) {
-          modbody.OnNewAction();
-     });
-    });
-    this.newActionObserver.observe(
-      document.querySelector('head > title'),
-      {subtree: true, characterData: true, childList: true }
-    );
     this.onactionhooks = [];
 
 
-
-    this.newTabObserver = new MutationObserver(function(mutations) {
-      //APP-INVENTORY
-      mutations.forEach(function(mutation) {
-        if (mutation.target.nodeName.toLowerCase().includes('app-')) {
-          if (mutation.addedNodes.length>0) {
-            if (mutation.target.nodeName.toLowerCase().split('-').length==2) {
-              if (mutation.target.nodeName.toLowerCase().split('-')[1]!='gamecontent') {
-                let tab = mutation.target.nodeName.toLowerCase().split('-')[1];
-                //crafting
-                if (tab=='actions') {
-                  let subtab = mutation.target.childNodes[2].nodeName.toLowerCase().split('-')[1];
-                  if (subtab=='actions') {
-                    subtab=='pets'; //Blah pls
-                  }
-                  modbody.currentTab = subtab;
-                  modbody.OnNewTab(subtab);
-                } else if (tab=='market') {
-                  let subtab = mutation.target.childNodes[2].nodeName.toLowerCase().split('-')[2];
-                  modbody.currentTab = subtab;
-                  modbody.OnNewTab(subtab);
-                } else {
-                  modbody.currentTab = mutation.target.nodeName.toLowerCase().split('-')[1];
-                  modbody.OnNewTab(mutation.target.nodeName.toLowerCase().split('-')[1]);
-                }
-
-            }
-            }
-
-          }
-        }
-      });
-    });
-
-   this.newTabObserver.observe(
-     document.querySelector('app-gamecontent'),
-     {subtree: true, childList: true }
-   );
    this.ontabhooks = [];
    //I SUCK AT JS
    //document.onclick = function(){modbody.Update()} //im retarded, look up hooks later
@@ -150,25 +106,73 @@ class FTGMod {
    console.log('loaded Quality of Quality of Life mod v'+this.ver+'. Have a nice day!');
  }
 
- HookOnAction(func, exec=false) {
-   if (exec) func();
-   this.onactionhooks.push(func);
- }
- HookOnTab(func, exec=false) {
-   if (exec) func();
-   this.ontabhooks.push(func);
- }
+    HookOnAction(func, exec=false) {
+        if (exec) func();
+        this.onactionhooks.push(func);
+    }
+    HookOnTab(func, exec=false) {
+        if (exec) func();
+        this.ontabhooks.push(func);
+    }
 
- OnNewAction() {
-   for (let i=0; i<this.onactionhooks.length; i++) {
-     this.onactionhooks[i]();
-   }
- }
- OnNewTab(tname) {
-   for (let i=0; i<this.ontabhooks.length; i++) {
-     this.ontabhooks[i](tname);
-   }
- }
+    OnNewAction() {
+        for (let i=0; i<this.onactionhooks.length; i++) {
+            this.onactionhooks[i]();
+        }
+    }
+    OnNewTab(tname) {
+        for (let i=0; i<this.ontabhooks.length; i++) {
+            this.ontabhooks[i](tname);
+        }
+    }
+
+
+    setupObservers() {
+        let qqolMod = this;
+        this.newActionObserver = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                qqolMod.OnNewAction();
+            });
+        });
+        this.newActionObserver.observe(
+            document.querySelector('head > title'),
+            {subtree: true, characterData: true, childList: true}
+        );
+
+        this.newTabObserver = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.addedNodes.length > 0) {
+                    let target = mutation.target.nodeName.toLowerCase();
+                    if (target.includes('app-')) {
+                        let parts = target.split('-')
+                        if (parts.length == 2 && parts[1] != 'gamecontent') {
+                            let tab = parts[1];
+
+                            // Make the tab more specific (and correct a naming error, if relevant).
+                            if (tab == 'actions') {
+                                tab = mutation.target.childNodes[2].nodeName.toLowerCase().split('-')[1];
+                                if (tab == 'actions') {
+                                    tab == 'pets'; //Blah pls
+                                }
+                            } else if (tab == 'market') {
+                                tab = mutation.target.childNodes[2].nodeName.toLowerCase().split('-')[2];
+                            } else if (tab == 'party') {
+                                let subtab = mutation.target.childNodes[4].nodeName.toLowerCase().split('-')[2];
+                                tab = tab + "-" + subtab;
+                            }
+
+                            qqolMod.currentTab = tab;
+                            qqolMod.OnNewTab(tab);
+                        }
+                    }
+                }
+            });
+        });
+        this.newTabObserver.observe(
+            document.querySelector('app-gamecontent'),
+            {subtree: true, childList: true }
+        );
+    }
 
   CheckLatestVersion() {
     let modbody = this;
