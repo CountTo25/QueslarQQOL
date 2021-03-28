@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
-// @namespace    http://tampermonkey.net/
-// @version      0.63
+// @namespace    countto25.queslar.qqol
+// @version      1.00
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -18,650 +18,666 @@
 ////
 
 
-//0.63
-// rootElement.playerCurrencyService.gem_fragments
-//
-
-//QQOL.gameData.marketService.serviceOrders
-//
-
 class FTGMod {
- constructor() {
-   this.ver = '0.63';
-   //OBSERVERS
-   var modbody = this;
-   this.serviceOrders = {};
-   this.newActionObserver = new MutationObserver(function(mutations) {
-     mutations.forEach(function(mutation) {
-          modbody.OnNewAction();
-     });
-    });
-    this.newActionObserver.observe(
-      document.querySelector('head > title'),
-      {subtree: true, characterData: true, childList: true }
-    );
-    this.onactionhooks = [];
+    constructor() {
+        this.ver = '1.00';
+        this.logging = true;
+
+        //DECLARE SHIT
+        this.onactionhooks = [];
+        this.ontabhooks = [];
+        this.settings = {
+            show_itr: true,
+            show_nl: true,
+            show_ttqc: true,
+            show_tttl: false,
+            show_ttke: false,
+            target_level: 0
+        };
+        this.currentTab = 'battle';
+        this.updateInterval = null;
+        this.actionsWarning = false;
+        this.fightTxtChanged = false;
+        this.questMsgType = -1;
 
 
+        // Setup/loading.
+        this.loadData();
+        this.setupObservers();
+        this.setupDom();
+        this.SetupSettings();
 
-    this.newTabObserver = new MutationObserver(function(mutations) {
-      //APP-INVENTORY
-      mutations.forEach(function(mutation) {
-        if (mutation.target.nodeName.toLowerCase().includes('app-')) {
-          if (mutation.addedNodes.length>0) {
-            if (mutation.target.nodeName.toLowerCase().split('-').length==2) {
-              if (mutation.target.nodeName.toLowerCase().split('-')[1]!='gamecontent') {
-                let tab = mutation.target.nodeName.toLowerCase().split('-')[1];
-                //crafting
-                if (tab=='actions') {
-                  let subtab = mutation.target.childNodes[2].nodeName.toLowerCase().split('-')[1];
-                  if (subtab=='actions') {
-                    subtab=='pets'; //Blah pls
-                  }
-                  modbody.currentTab = subtab;
-                  modbody.OnNewTab(subtab);
-                } else if (tab=='market') {
-                  let subtab = mutation.target.childNodes[2].nodeName.toLowerCase().split('-')[2];
-                  modbody.currentTab = subtab;
-                  modbody.OnNewTab(subtab);
-                } else {
-                  modbody.currentTab = mutation.target.nodeName.toLowerCase().split('-')[1];
-                  modbody.OnNewTab(mutation.target.nodeName.toLowerCase().split('-')[1]);
+
+        // Add action and tab listeners.
+        let qqolMod = this;
+        this.HookOnAction(() => {this.Update()});
+        this.HookOnAction(() => {if (this.updateInterval == null) {this.updateInterval = setInterval(() => {qqolMod.Update()}, 1000)}});
+        this.HookOnAction(() => this.IncomePerHour());
+        this.HookOnAction(() => this.BlockActionsOnOvercap());
+
+        this.HookOnTab((tabName) => {this.logText("Tab Name: " + tabName)});
+        this.HookOnTab((tabName) => {this.IncomePerHour()});
+        this.HookOnTab((tabName) => {this.BlockActionsOnOvercap()});
+
+
+        // Check for an update right now.
+        this.CheckLatestVersion();
+        // Continue checking for updates every hour.
+        setInterval(() => {qqolMod.CheckLatestVersion()}, 3600000);
+
+        this.logText('Loaded Queslar Quality of Life mod v'+this.ver+'. Have a nice day!');
+    }
+
+    HookOnAction(func, exec=false) {
+        if (exec) func();
+        this.onactionhooks.push(func);
+    }
+    HookOnTab(func, exec=false) {
+        if (exec) func();
+        this.ontabhooks.push(func);
+    }
+
+    OnNewAction() {
+        for (let i=0; i<this.onactionhooks.length; i++) {
+            this.onactionhooks[i]();
+        }
+    }
+    OnNewTab(tname) {
+        // If the tab changed, then any of the main page elements that may have been added by QQOL will have been removed, so reset all of those trackers.
+        this.fightTxtChanged = false;
+
+        for (let i=0; i<this.ontabhooks.length; i++) {
+            this.ontabhooks[i](tname);
+        }
+    }
+
+
+    logText(text, objectData=null) {
+        if (this.logging) {
+            console.log("countto25.queslar.qqol    " + text);
+
+            if (objectData !== null) {
+                console.log(objectData);
+            }
+        }
+    }
+    loadData() {
+        let qqolDataString = localStorage.getItem("countto25_queslar_qqol");
+        this.logText("Stringified data from storage: " + qqolDataString);
+
+        if (qqolDataString != null) {
+            let qqolData = JSON.parse(qqolDataString);
+            this.settings = qqolData.settings;
+
+            // Turn off showing the time to target level if no reasonable level was targeted.
+            if (qqolData.settings.tttl < 1) {
+                this.settings.show_tttl = false;
+            }
+        }
+    }
+    saveData() {
+        let qqolData = {};
+        qqolData.settings = this.settings;
+        let qqolDataString = JSON.stringify(qqolData);
+        localStorage.countto25_queslar_qqol = qqolDataString;
+    }
+
+    setupObservers() {
+        let qqolMod = this;
+        this.newActionObserver = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                qqolMod.OnNewAction();
+            });
+        });
+        this.newActionObserver.observe(
+            document.querySelector('head > title'),
+            {subtree: true, characterData: true, childList: true}
+        );
+
+        this.newTabObserver = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.addedNodes.length > 0) {
+                    let target = mutation.target.nodeName.toLowerCase();
+                    if (target.includes('app-')) {
+                        let parts = target.split('-')
+                        if (parts.length == 2 && parts[1] != 'gamecontent') {
+                            let tab = parts[1];
+
+                            // Make the tab more specific (and correct a naming error, if relevant).
+                            if (tab == 'actions') {
+                                tab = mutation.target.childNodes[2].nodeName.toLowerCase().split('-')[1];
+                                if (tab == 'actions') {
+                                    tab == 'pets'; //Blah pls
+                                }
+                            } else if (tab == 'market') {
+                                tab = mutation.target.childNodes[2].nodeName.toLowerCase().split('-')[2];
+                            } else if (tab == 'party') {
+                                let subtab = mutation.target.childNodes[4].nodeName.toLowerCase().split('-')[2];
+                                tab = tab + "-" + subtab;
+                            }
+
+                            qqolMod.currentTab = tab;
+                            qqolMod.OnNewTab(tab);
+                        }
+                    }
                 }
+            });
+        });
+        this.newTabObserver.observe(
+            document.querySelector('app-gamecontent'),
+            {subtree: true, childList: true }
+        );
+    }
 
-            }
-            }
+    setupDom() {
+        var csselem = document.createElement("link");
+        csselem.setAttribute("rel", "stylesheet");
+        csselem.setAttribute("type", "text/css");
+        csselem.setAttribute("href", "https://countto25.github.io/QueslarQQOL/cssfix.css");
+        document.getElementsByTagName("head")[0].appendChild(csselem);
 
-          }
+        let QQOLholder = document.createElement('div');
+        QQOLholder.id = 'QQOL_holder';
+        QQOLholder.style.marginTop = '10px';
+        document.getElementById('profile-next-level').parentNode.appendChild(QQOLholder, null);
+
+        let QQOLinfo = document.createElement('div');
+        QQOLinfo.id='QQOL_info';
+        QQOLinfo.innerHTML = '<span id="toSettings" class="QQOL-link-action"><mat-icon class="mat-icon material-icons" style="vertical-align: bottom: height: 16px; width: 16px; font-size: 16px">settings</mat-icon>QQOL v'+this.ver+'</span><span id="updateMsg" />';
+
+        let idletimeremainingtooltip = document.createElement('div');
+        idletimeremainingtooltip.id='QQOL_remaining_time_div';
+        idletimeremainingtooltip.innerHTML = "<span class='QQOL-tooltip'>"
+            + "<span class='QQOL-tooltiptext'><span id='QQOL_itr_solo_tooltipvalue'></span> solo actions and <span id='QQOL_itr_party_tooltipvalue'></span> party actions</span>"
+            + "Idle time remaining: <span id='QQOL_remaining_time'></span>"
+            + "</span>";
+        if (!this.settings.show_itr) {
+            idletimeremainingtooltip.style.display = 'none';
         }
-      });
-    });
 
-   this.newTabObserver.observe(
-     document.querySelector('app-gamecontent'),
-     {subtree: true, childList: true }
-   );
-   this.ontabhooks = [];
-   //I SUCK AT JS
-   //document.onclick = function(){modbody.Update()} //im retarded, look up hooks later
-                                                   //.clickable onclick?
+        let timetoleveluptooltip = document.createElement('div');
+        timetoleveluptooltip.id = 'QQOL_time_to_levelup_div';
+        timetoleveluptooltip.innerHTML = "Time to next level: <span id='QQOL_time_to_levelup'></span>";
+        if (!this.settings.show_nl) {
+            timetoleveluptooltip.style.display = 'none';
+        }
 
-   //NEW DOM
-   var csselem = document.createElement("link");
-   csselem.setAttribute("rel", "stylesheet");
-   csselem.setAttribute("type", "text/css");
-   csselem.setAttribute("href", "https://countto25.github.io/QueslarQQOL/cssfix.css");
-   document.getElementsByTagName("head")[0].appendChild(csselem);
+        let QQOLquests = document.createElement('div');
+        QQOLquests.id='QQOL_quests';
+        QQOLquests.innerHTML = 'Loading...';
+        QQOLquests.addEventListener("click", (e) => { this.gameData.router.navigate(["/game/actions/quests"]) });
+        QQOLquests.classList.add('clickable');
+        if (!this.settings.show_ttqc) {
+            QQOLquests.style.display = 'none';
+        }
 
-   let QQOLholder = document.createElement('div');
-   QQOLholder.id = 'QQOL_holder';
-   document.getElementById('profile-next-level').parentNode.insertBefore(QQOLholder,document.getElementById('profile-next-level').nextSibling);
-   //document.getElementById('mat-tab-content-0-1').children[0].appendChild(QQOLholder);
+        let QQOLTimeToTargetLevel = document.createElement('div');
+        QQOLTimeToTargetLevel.id='QQOL_TTTL';
+        QQOLTimeToTargetLevel.innerHTML = 'Time to level <span id="QQOL_target_level"></span>: <span id="QQOL_time_to_target"></span>';
+        if (!this.settings.show_tttl) {
+            QQOLTimeToTargetLevel.style.display = 'none';
+        }
 
-   let QQOLinfo = document.createElement('div');
-   QQOLinfo.style.marginTop = '10px';
-   QQOLinfo.id='QQOL_info';
-   QQOLinfo.innerHTML = '<mat-icon class="mat-icon material-icons" style="vertical-align: bottom: height: 16px; width: 16px; font-size: 16px">settings</mat-icon><span id="toSettings" class="QQOL-link-action">QQOL v'+this.ver+'</span>';
+        let QQOLkdexp = document.createElement('div');
+        QQOLkdexp.id='QQOL_kingdomexploration_div';
+        QQOLkdexp.innerHTML = 'KD exploration: <span id="QQOL_kingdomexploration"></span>';
+        if (!this.settings.show_ttke) {
+            QQOLkdexp.style.display = 'none';
+        }
 
-   let QQOLquests = document.createElement('div');
-   QQOLquests.id='QQOL_quests';
-   QQOLquests.innerHTML = 'Loading...';
+        let qqolHolder = document.getElementById('QQOL_holder')
+        qqolHolder.appendChild(QQOLinfo);
+        qqolHolder.appendChild(idletimeremainingtooltip);
+        qqolHolder.appendChild(timetoleveluptooltip);
+        qqolHolder.appendChild(QQOLquests);
+        qqolHolder.appendChild(QQOLTimeToTargetLevel);
+        qqolHolder.appendChild(QQOLkdexp);
+    }
 
-   let QQOLkdexp = document.createElement('div');
-   QQOLkdexp.id='QQOL_kingdomexploration';
-   QQOLkdexp.innerHTML = '';
+    CheckLatestVersion() {
+        let qqolMod = this;
+        let request = new XMLHttpRequest();
+        request.open('GET', 'https://api.github.com/repos/countto25/queslarqqol/tags', true);
+        request.onload = function() {
+            if (request.status >= 200 && request.status < 400) {
+                var data = JSON.parse(request.responseText);
+                qqolMod.logText("Version tags response: ", data);
+                let latestVersionString = data[1].name;
+                qqolMod.logText("This script version: " + qqolMod.ver + "; Latest server version: " + latestVersionString);
 
+                let latestVersion = parseFloat(latestVersionString);
+                let thisVersion = parseFloat(qqolMod.ver);
+                if (latestVersion > thisVersion) {
+                    qqolMod.logText("Newer version available");
+                    let txt = '<a target="_blank" href="https://countto25.github.io/QueslarQQOL?update=true" class="QQOL-link-action" style="color:red; text-decoration: none">Please update</a>';
+                    document.getElementById('updateMsg').innerHTML=txt;
+                } else if (latestVersion < thisVersion) {
+                    qqolMod.logText("Only older versions available");
+                    let txt = '<span style="color:green; text-decoration: none">Maybe do your actual job?</span>';
+                    document.getElementById('updateMsg').innerHTML=txt;
+                }
+            } else {
+                console.log('countto25.queslar.qqol    Error getting latest version information.')
+            }
+        }
 
-   let QQOLTimeToTargetLevel = document.createElement('div');
-   QQOLTimeToTargetLevel.id='QQOL_TTTL';
-   if (!localStorage.targetLevel || parseInt(localStorage.QQOL_tttl_show)!=1)
-    QQOLTimeToTargetLevel.style.display = 'none';
-   QQOLTimeToTargetLevel.innerHTML = '';
+        request.send();
+    }
 
-   let timetoleveluptooltip = document.createElement('div');
-   timetoleveluptooltip.id = 'QQOL_time_to_levelup';
-   let idletimeremainingtooltip = document.createElement('div');
-   idletimeremainingtooltip.id='QQOL_remaining_time';
-   document.getElementById('QQOL_holder').appendChild(QQOLinfo);
-   document.getElementById('QQOL_holder').appendChild(idletimeremainingtooltip);
-   document.getElementById('QQOL_holder').appendChild(timetoleveluptooltip);
-   document.getElementById('QQOL_holder').appendChild(QQOLquests);
-   document.getElementById('QQOL_holder').appendChild(QQOLTimeToTargetLevel);
-   document.getElementById('QQOL_holder').appendChild(QQOLkdexp);
+    get gameData() {
+        let rootElement = getAllAngularRootElements()[0].children[1]["__ngContext__"][30];
+        return rootElement.playerGeneralService;
+    }
 
+    SecondsToString(seconds) {
+        var numyears = Math.floor(seconds / 31536000);
+        var numdays = Math.floor((seconds % 31536000) / 86400);
+        var numhours = Math.floor(((seconds % 31536000) % 86400) / 3600);
+        var numminutes = Math.floor((((seconds % 31536000) % 86400) % 3600) / 60);
+        var numseconds = Math.floor((((seconds % 31536000) % 86400) % 3600) % 60);
+        return numhours.toString().padStart(2, '0') + ":" + numminutes.toString().padStart(2, '0') + "." + numseconds.toString().padStart(2, '0');
+    }
 
-   //DECLARE SHIT
-   this.rememberquest = null;
-   this.activetab = null;
-   this.updateInterval = null;
+    ActionsToTime(actions) {
+        if (actions<1) {
+            return '00:00';
+        }
 
-   //FINISH
-   this.HookOnAction(() => {modbody.Update()});
-   this.HookOnAction(() => {if (modbody.rememberquest!=null && document.title.split(' - ')[1]!='Party') modbody.rememberquest--;});
-   this.HookOnAction(() => {if (modbody.updateInterval == null) {modbody.updateInterval = setInterval(() => {modbody.Update()}, 100)}});
-   this.HookOnAction(() => this.IncomePerHour());
+        let minval = Math.floor(actions/10);
+        let hourval = Math.floor(minval/60);
+        let remMinutes = minval%60;
+        let remSeconds = actions/10
+        let subSeconds = this.gameData.partyService.isFighting?this.gameData.partyService.countDown:this.gameData.playerActionService.countDown;
+        if ((actions*6%60) - (6-subSeconds) < 0) {
+            remMinutes--;
+        }
 
-   this.HookOnTab((x) => {console.log(x)});
-   this.HookOnTab((x) => {modbody.activetab = x});
-   this.HookOnTab((x) => {if (x==='battle') this.BlockActionsOnOvercap()});
+        let remSec = actions*6%60;
+        let a = 6-subSeconds;
+        if (remSec-a<0) {
+            remSec=remSec+60-a
+        } else {
+            remSec = remSec-a;
+        }
+        if (remSec<10) remSec='.0'+remSec;
+        else remSec='.'+remSec;
 
-   setInterval(() => {modbody.CheckLatestVersion()}, 1000000);
+        let dayVal = Math.floor(hourval/24);
+        return ((dayVal>0)?(dayVal+'d '):(''))+hourval%24+':'+(remMinutes<10?('0'+remMinutes):(remMinutes))+remSec;
+    }
 
-   this.CheckLatestVersion();
-   this.DoUI();
-   this.SetupSettings();
-   this.ReflectSettings();
+    BlockActionsOnOvercap() {
+        if (this.currentTab == 'battle') {
+            if (this.gameData.playerActionService.actions.remaining > this.gameData.playerActionService.actions.total
+                    && this.gameData.playerActionService.currentSkill == "battling"
+                    && !this.gameData.partyService.isFighting
+                    && !this.fightTxtChanged) {
+                this.logText("Player has extra actions.");
+                document.querySelector('[joyridestep="startingTutorialSix"]').childNodes[0].innerHTML = 'Refreshing will reset action cap.';
+                this.fightTxtChanged = true;
 
+                // The above text change is only meant to be a warning, but the button is still clickable and will refresh this tab (maybe the user put on a larger action set and wants to refresh to pick even more actions).
+                // That requires the fight button text to go back to normal. Attach a function to set those up.
+                document.querySelector('[joyridestep="startingTutorialSix"]').addEventListener("click", (e) => {
+                    document.querySelector('[joyridestep="startingTutorialSix"]').childNodes[0].innerHTML = 'Fight';
+                });
+            } else if (this.gameData.playerActionService.actions.remaining <= this.gameData.playerActionService.actions.total
+                    && this.gameData.playerActionService.currentSkill == "battling"
+                    && !this.gameData.partyService.isFighting
+                    && this.fightTxtChanged) {
+                document.querySelector('[joyridestep="startingTutorialSix"]').childNodes[0].innerHTML = 'Fight';
+                this.fightTxtChanged = false;
+            }
+        }
+    }
 
+    IncomePerHour() {
+        if (this.gameData.playerActionService.currentSkill != 'battling' || (this.currentTab != 'battle' && this.currentTab != 'party-battle')) {
+            return;
+        }
 
-   console.log('loaded Quality of Quality of Life mod v'+this.ver+'. Have a nice day!');
- }
+        let isParty = this.gameData.partyService.isFighting;
+        if ((this.currentTab == 'battle' && isParty) || (this.currentTab == 'party-battle' && !isParty)) {
+            return;
+        }
 
- HookOnAction(func, exec=false) {
-   if (exec) func();
-   this.onactionhooks.push(func);
- }
- HookOnTab(func, exec=false) {
-   if (exec) func();
-   this.ontabhooks.push(func);
- }
+        if ((!isParty && this.gameData.playerActionService.actionResult.victory) || (isParty && this.gameData.partyService.actionResult.victory)) {
+            // Lots of things reset the fighting page without a consistent hook to tie in to (clicking the fight button again, clicking the patch notes or logs tab across the top)
+            // in order to remove/reset the "display is already there" flag (and viewing the patch notes or log page doesn't even actually remove the control anyway, just makes it
+            // inaccesible). So instead, try to get the gold placeholder by id (which will hopefully be a quick lookup) to determine if the fields need to be added or just updated.
+            if (document.getElementById('QQOL_income_gold') === null) {
+                let resultElem = document.querySelector('.action-result-value-container');
+                if (resultElem === null) {
+                    // We should be on the right display, the element the income info would be added to is not present. Maybe the patch notes or the log has been pulled up.
+                    // Skip doing anything with the income info block.
+                    return;
+                } else {
+                    let infospan = document.createElement('div');
+                    infospan.style.marginTop = '10px';
+                    infospan.id='QQOL_GEPH';
+                    infospan.innerHTML = "<span class='QQOL-tooltip'><span id='QQOL_income_gold'></span> gold and <span id='QQOL_income_exp'></span> experience per hour<span class='QQOL-tooltiptext'>Unless you die</span></span>";
+                    resultElem.appendChild(infospan);
+                }
+            }
 
- get gameData() {
-   let rootElement = getAllAngularRootElements()[0].children[1]["__ngContext__"][30];
-   return rootElement.playerGeneralService;
+            let exp = 1;
+            let gold = 1;
+            if (isParty) {
+                exp = this.gameData.partyService.actionResult.income.experience.amount;
+                gold = this.gameData.partyService.actionResult.income.gold.amount;
+            } else {
+                exp = this.gameData.playerActionService.actionResult.income.experience.amount;
+                gold = this.gameData.playerActionService.actionResult.income.gold.amount;
+            }
 
- }
+            document.getElementById('QQOL_income_gold').innerHTML = (gold*600).toLocaleString();
+            document.getElementById('QQOL_income_exp').innerHTML = (exp*600).toLocaleString();
+        }
+    }
 
- Update() {
-   this.TimeRemaining();
-   this.TimeToLevelUp();
-   this.TrySearchProviderUI();
-   this.TimeToQuestComplete();
-   this.ReflectTimeToTargetLevel();
-   this.explorationTimer();
- }
+    Update() {
+        if (document.getElementById("QQOL_holder")) {
+            this.TimeRemaining();
+            this.explorationTimer();
+            this.TimeToQuestComplete();
+            this.TimeToLevelUp();
+            this.TimeToTargetLevel();
+        }
+    }
 
- GetRemainingActions() {
-   return this.gameData.playerActionService.actions.remaining;
- }
+    TimeRemaining() {
+        if (this.settings.show_itr) {
+            let actionsRemaining = this.gameData.playerActionService.actions.remaining;
+            document.getElementById('QQOL_itr_solo_tooltipvalue').innerHTML = actionsRemaining;
 
- OnNewAction() {
-   for (let i=0; i<this.onactionhooks.length; i++) {
-     this.onactionhooks[i]();
-   }
- }
+            let partyActionsRemaining = 0;
+            let totalActionsRemaining = actionsRemaining;
+            if (this.gameData.partyService.hasParty && this.gameData.partyService.isFighting) {
+                let playerId = this.gameData.gameService.playerData.id;
+                partyActionsRemaining = this.gameData.partyService.partyOverview.partyInformation[playerId].actions.daily_actions_remaining;
+                totalActionsRemaining += partyActionsRemaining;
+            }
 
- OnNewTab(tname) {
-   for (let i=0; i<this.ontabhooks.length; i++) {
-     this.ontabhooks[i](tname);
-   }
- }
+            document.getElementById('QQOL_itr_party_tooltipvalue').innerHTML = partyActionsRemaining;
+            document.getElementById('QQOL_remaining_time').innerHTML = this.ActionsToTime(totalActionsRemaining);
 
- CreateTimerWindow() {
-   if (document.querySelector('.h5.mt-1')) {
-     let timerelement = document.createElement('span');
-    timerelement.id = 'FTG_idle_timer';
-    timerelement.classList.add('h5');
-    timerelement.setAttribute('style','margin-top: .25rem !important;');
-    document.querySelector('.h5.mt-1').parentNode.insertBefore(timerelement,document.querySelector('.h5.mt-1'))
+            if (actionsRemaining < 1 && !this.actionsWarning) {
+                this.logText("Actions newly fatigued.");
+                document.getElementById('QQOL_remaining_time_div').innerHTML += "<span id='QQOL_itr_warning' style='color: red'>Restart your actions!</span>";
+                this.actionsWarning = true;
+            } else if (actionsRemaining > 0 && this.actionsWarning) {
+                this.logText("Actions no longer fatigued.");
+                document.getElementById('QQOL_itr_warning').remove();
+                this.actionsWarning = false;
+            }
+        }
+    }
+
+    explorationTimer() {
+        if (this.settings.show_ttke) {
+            let kingdomSvc = this.gameData.playerKingdomService;
+            if (!kingdomSvc.isInKingdom || !kingdomSvc.kingdomData || !kingdomSvc.kingdomData.selectedExploration) {
+                return;
+            }
+
+            let exploration = kingdomSvc.kingdomData.selectedExploration;
+            let timetoend = new Date(exploration.exploration_timer);
+            timetoend = Math.floor(timetoend.getTime() / 1000);
+            let now = new Date();
+            now = Math.floor(now.getTime() / 1000);
+
+            let diff = timetoend - now;
+            let time = this.SecondsToString(diff);
+            document.getElementById('QQOL_kingdomexploration').innerHTML = time;
+        }
+    }
+
+    TimeToQuestComplete() {
+        if (!this.settings.show_ttqc) {
+            return;
+        }
+
+        if (this.gameData.playerQuestService.currentQuestId!=0) {
+            let cQuest = this.gameData.playerQuestService.currentQuest[0];
+
+            if (cQuest.objectiveType=='actions') {
+                if (this.questMsgType != 1) {
+                    // Change the quest message to the HTML appropriate for this type of quest.
+                    document.getElementById('QQOL_quests').innerHTML = 'Time to quest completion: <span id="QQOL_quest_time"></span>';
+                    this.questMsgType = 1;
+                }
+                // The quest message HTML is (now) set up, just update the values.
+                let remaining = cQuest.objectiveAmount - cQuest.currentProgress;
+                document.getElementById('QQOL_quest_time').innerHTML = this.ActionsToTime(remaining);
+            } else if (cQuest.objectiveType=='kills') {
+                if (this.gameData.playerActionService.currentSkill=='battling') {
+                    if (!this.gameData.partyService.isFighting) {
+                        if (this.questMsgType != 2) {
+                            // Change the quest message to the HTML appropriate for this type of quest.
+                            document.getElementById('QQOL_quests').innerHTML = '<span class="QQOL-tooltip">Time to quest completion<span class="QQOL-tooltiptext">If you keep on fighting solo and avoiding death</span></span>: <span id="QQOL_quest_time"></span>';
+                            this.questMsgType = 2;
+                        }
+                        // The quest message HTML is (now) set up, just update the values.
+                        let remaining = cQuest.objectiveAmount - cQuest.currentProgress;
+                        document.getElementById('QQOL_quest_time').innerHTML = this.ActionsToTime(remaining);
+                    } else if (this.questMsgType != 4) {
+                        // Change the quest message to the HTML appropriate for this type of quest and activity.
+                        document.getElementById('QQOL_quests').innerHTML = "Kills quest active, but party doesn't count.";
+                        this.questMsgType = 4;
+                    }
+                } else if (this.questMsgType != 3) {
+                    // Change the quest message to the HTML appropriate for this type of quest and activity.
+                    document.getElementById('QQOL_quests').innerHTML = '<span style="color:red">Kills quest active, but not battling.</span>';
+                    this.questMsgType = 3;
+                }
+            } else if (cQuest.objectiveType=='gold') {
+                if (this.gameData.playerActionService.currentSkill=='battling') {
+                    if (!this.gameData.partyService.isFighting) {
+                        if (this.questMsgType != 5) {
+                            // Change the quest message to the HTML appropriate for this type of quest.
+                            document.getElementById('QQOL_quests').innerHTML = '<span class="QQOL-tooltip">Time to quest completion<span class="QQOL-tooltiptext">At <span id="QQOL_quest_gpt"></span> gold per turn</span></span>: <span id="QQOL_quest_time"></span>';
+                            this.questMsgType = 5;
+                        }
+                        // The quest message HTML is (now) set up, just update the values.
+                        let gpt = this.gameData.playerActionService.actionResult.income.gold.amount;
+                        if (this.gameData.playerActionService.actionResult.income.gold.tax) {
+                            gpt+=this.gameData.playerActionService.actionResult.income.gold.tax;
+                        }
+                        let actionsToCompletion = Math.ceil((cQuest.objectiveAmount - cQuest.currentProgress)/gpt);
+                        document.getElementById('QQOL_quest_time').innerHTML = this.ActionsToTime(actionsToCompletion);
+                    } else if (this.questMsgType != 7) {
+                        // Change the quest message to the HTML appropriate for this type of quest and activity.
+                        document.getElementById('QQOL_quests').innerHTML = 'Gold quest active, but party gold does not count.';
+                        this.questMsgType = 7;
+                    }
+                } else if (this.questMsgType != 6) {
+                    // Change the quest message to the HTML appropriate for this type of quest and activity.
+                    document.getElementById('QQOL_quests').innerHTML = '<span style="color:red">Gold quest active, but not in battle.</span>';
+                    this.questMsgType = 6;
+                }
+            }
+        } else if (this.questMsgType != 0) {
+            document.getElementById('QQOL_quests').innerHTML = '<span style="color:red">Grab a new quest!</span>';
+            this.questMsgType = 0;
+        }
+    }
+
+    TimeToLevelUp() {
+        if (this.settings.show_nl) {
+            if (document.getElementById('profile-next-level')) {
+                let txt = document.getElementById('profile-next-level').innerHTML;
+                let actionVal = parseInt(txt.replace(/\D/g,''));
+                document.getElementById('QQOL_time_to_levelup').innerHTML = this.ActionsToTime(actionVal);
+            }
+        }
+    }
+
+    ExpToLevel() {
+        let expBank = 0;
+        let currentLevel = this.gameData.playerLevelsService.battling.level;
+        let currentExp = this.gameData.playerLevelsService.battling.exp.have;
+
+        for (let i = currentLevel; i < this.settings.target_level; i++) {
+            let expToLevel = Math.round(25000 * Math.pow(i, 0.5));
+            let levelTemp = i;
+            while (levelTemp > 1500) {
+                expToLevel += 250 * Math.pow((levelTemp - 1500), 1.25)
+                levelTemp -= 1500;
+            }
+            expBank+=expToLevel;
+        }
+
+        return expBank-currentExp;
+    }
+
+    TimeToTargetLevel() {
+        if (this.settings.show_tttl) {
+            document.getElementById('QQOL_target_level').innerHTML = this.settings.target_level;
+
+            let time = "";
+            if (this.settings.target_level < 1) {
+                time = "Check settings."
+            } else {
+                if (this.gameData.playerActionService.actionResult.income && this.gameData.playerActionService.actionResult.income.experience.amount) {
+                    let actionVal = this.gameData.playerActionService.actionResult.income.experience.amount;
+                    let totalExpReq = this.ExpToLevel();
+                    let actionsReq = Math.ceil(totalExpReq/actionVal);
+                    time = this.ActionsToTime(actionsReq);
+                }
+            }
+
+            document.getElementById('QQOL_time_to_target').innerHTML = time;
+        }
+    }
+
+    SetupSettings() {
+        let div = document.createElement("div");
+        div.classList.add("QQOLsettings");
+        div.style.display = 'none';
+        div.innerHTML = this.settingsPageHtml;
+        document.body.appendChild(div);
+
+        let qqolMod = this;
+        document.getElementById('exitSettings').onclick = function() {
+            qqolMod.applySettings();
+            document.querySelector('.QQOLsettings').style.display='none';
+        }
+
+        document.getElementById('contactme').onclick = function() {
+            qqolMod.applySettings();
+            let chat = document.querySelector('.chat-input ');
+            if (chat === null) {
+                chat = document.querySelector('.chat-input-reverse');
+            }
+            chat.value='/w FiammaTheGreat';
+            document.querySelector('.QQOLsettings').style.display='none';
+        }
+
+        document.getElementById('toSettings').onclick = function() {
+            document.querySelector('.QQOLsettings').style.display='block';
+        }
+
+        for (const [key, value] of Object.entries(this.settings)) {
+            if (key.startsWith("show_") && value) {
+                document.querySelector('input[for=' + key + ']').checked = true;
+            } else {
+                document.querySelector('input[for=' + key + ']').value = value;
+            }
+        }
   }
- }
 
- BlockActionsOnOvercap() {
-   return '';
-   //find smth to do with issue
-   if (this.gameData.playerActionService.actions.remaining > this.gameData.playerActionService.actions.total &&
-       this.gameData.playerActionService.currentSkill == "battling" &&
-       !this.gameData.partyService.isFighting) {
-     document.querySelector('[joyridestep="startingTutorialSix"]').style.pointerEvents = 'none';
-     document.querySelector('[joyridestep="startingTutorialSix"]').innerHTML = 'Refreshing will reset action cap';
-   } else {
-     document.querySelector('[joyridestep="startingTutorialSix"]').style.pointerEvents = 'unset';
-     document.querySelector('[joyridestep="startingTutorialSix"]').innerHTML = 'Fight';
-   }
- }
+    applySettings() {
+        // Select all of the input elements, that are a descendent of the overall QQOL settings dialog, that have the "for" attribute and the "for" attribute is not empty.
+        let dlgSettings = document.querySelectorAll('#QQOL_settings input[for]:not([for=""])');
 
- TimeRemaining() {
-   let actionsRemaining = this.GetRemainingActions();
-   let txt ='Idle time remaining: '+this.ActionsToTime(actionsRemaining);
-   let playerId = this.gameData.gameService.playerData.id;
-   if (this.gameData.partyService.hasParty) {
-    let partyActionsRemaining = this.gameData.partyService.partyOverview.partyInformation[playerId].actions.daily_actions_remaining;
-    actionsRemaining += partyActionsRemaining;
-    //<span class="QQOL-tooltip">
-    txt ='<span class="QQOL-tooltip"><span class="QQOL-tooltiptext">'
-      +this.GetRemainingActions()+
-      ' solo actions and '+partyActionsRemaining+' party actions</span>Idle time remaining</span>: '
-      +this.ActionsToTime(actionsRemaining);
-   }
-   if (this.GetRemainingActions()<0) {
-     txt ="<span style='color: red'>Restart your actions!</span>";
-   }
-   if (document.getElementById('QQOL_remaining_time'))
-    document.getElementById('QQOL_remaining_time').innerHTML=txt;
- }
+        // Get the settings from the dialog and save them in the class instance.
+        for (var i = 0; i < dlgSettings.length; i++) {
+            if (dlgSettings[i].type == "checkbox") {
+                this.settings[dlgSettings[i].getAttribute("for")] = dlgSettings[i].checked;
+            } else {
+                this.settings[dlgSettings[i].getAttribute("for")] = dlgSettings[i].value;
+            }
+        }
 
- explorationTimer()
- {
-     //rootElement.playerGeneralService.playerKingdomService.kingdomData.selectedExploration
+        // Save the (possibly new) settings to the local storage.
+        this.saveData();
 
-     if (!this.gameData.playerKingdomService.isInKingdom) {
-         return;
-     }
+        // Now apply all of the settings (new or not).
+        if (this.settings.show_itr) {
+            document.getElementById('QQOL_remaining_time_div').style.display = 'block';
+        } else {
+            document.getElementById('QQOL_remaining_time_div').style.display = 'none';
+        }
 
-     if (!this.gameData.playerKingdomService.kingdomData) {
-         return;
-     }
+        if (this.settings.show_nl) {
+            document.getElementById('QQOL_time_to_levelup_div').style.display = 'block';
+        } else {
+            document.getElementById('QQOL_time_to_levelup_div').style.display = 'none';
+        }
 
-     if (!this.gameData.playerKingdomService.kingdomData.selectedExploration) {
-         return;
-     }
+        if (this.settings.show_ttqc) {
+            document.getElementById('QQOL_quests').style.display = 'block';
+        } else {
+            document.getElementById('QQOL_quests').style.display = 'none';
+        }
 
-     let exploration = this.gameData.playerKingdomService.kingdomData.selectedExploration;
-     let timetoend = new Date(exploration.exploration_timer);
-     timetoend = Math.floor(timetoend.getTime() / 1000);
-     let now = new Date();
-     now = Math.floor(now.getTime() / 1000);
+        if (this.settings.show_tttl) {
+            document.getElementById('QQOL_TTTL').style.display = 'block';
+        } else {
+            document.getElementById('QQOL_TTTL').style.display = 'none';
+        }
 
-     let diff = timetoend - now;
-     let time = this.SecondsToString(diff);
-     document.querySelector('#QQOL_kingdomexploration').innerHTML = 'KD exploration: '+time;
- }
-
- GetSeconds(actions) {
-   return '';
- }
-
- IncomePerHour() {
-  let infospan;
-  let subname = (this.currentTab == 'party')?'p':'s'
-  if (!document.querySelector('#QQOL_GEPH_'+subname)) {
-    let appendTo = document.querySelector('.action-result-value-container');
-    infospan = document.createElement('div');
-    infospan.style.marginTop = '10px';
-    infospan.id='QQOL_GEPH_'+subname;
-    if (appendTo)
-      appendTo.appendChild(infospan);
-  } else {
-    infospan = document.querySelector('#QQOL_GEPH_'+subname);
-  }
-  if (this.currentTab == 'party') {
-    if (Object.keys(this.gameData.partyService.actionResult).length!=0) {
-      let exp = this.gameData.partyService.actionResult.income.experience.amount;
-      let gold = this.gameData.partyService.actionResult.income.gold.amount;
-      infospan.innerHTML = `(<span class='QQOL-tooltip'>${(gold*600).toLocaleString()} gold and ${(exp*600).toLocaleString()} experience per hour<span class='QQOL-tooltiptext'>Unless you die</span></span>)`;
-    }
-  } else {
-    if (Object.keys(this.gameData.playerActionService.actionResult).length!=0) {
-      let exp = this.gameData.playerActionService.actionResult.income.experience.amount;
-      let gold = this.gameData.playerActionService.actionResult.income.gold.amount;
-      infospan.innerHTML = `(<span class='QQOL-tooltip'>${(gold*600).toLocaleString()} gold and ${(exp*600).toLocaleString()} experience per hour<span class='QQOL-tooltiptext'>Unless you die</span></span>)`;
-    }
-  }
- }
-
-
- TimeToQuestComplete() {
-   let txt;
-   let cQuest = this.gameData.playerQuestService.currentQuest[0];
-   if (this.gameData.playerQuestService.currentQuestId!=0) {
-     if (cQuest.objectiveType=='actions') {
-       let remaining = cQuest.objectiveAmount - cQuest.currentProgress;
-       txt = 'Time to quest completion: '+this.ActionsToTime(remaining);
-    } else if (cQuest.objectiveType=='kills') {
-      if (this.gameData.playerActionService.currentSkill=='battling') {
-        txt = '<span class="QQOL-tooltip">Time to quest completion<span class="QQOL-tooltiptext">If you keep on fighting solo and avoiding death</span></span>: '
-          +this.ActionsToTime(cQuest.objectiveAmount - cQuest.currentProgress)
-      } else {
-        txt = 'Kills quest active, not in battle';
-      }
-    } else if (cQuest.objectiveType=='gold') {
-        if (this.gameData.playerActionService.currentSkill=='battling') {
-          let gpt = 0;
-          if (!this.gameData.partyService.isFighting) {
-            gpt = this.gameData.playerActionService.actionResult.income.gold.amount;
-            if (this.gameData.playerActionService.actionResult.income.gold.tax)
-              gpt+=this.gameData.playerActionService.actionResult.income.gold.tax;
-          } else {
-              txt = 'Doing party actions';
-              if (document.querySelector('#QQOL_quests'))
-               document.querySelector('#QQOL_quests').innerHTML=txt;
-              return false;
-          }
-          let actionsToCompletion = Math.ceil((cQuest.objectiveAmount - cQuest.currentProgress)/gpt);
-          txt =
-            '<span class="QQOL-tooltip">Time to quest completion<span class="QQOL-tooltiptext">At '
-            +gpt+' gold per turn</span></span>: '+this.ActionsToTime(actionsToCompletion);
-      } else {
-        txt = 'Gold quest active, not in battle';
-      }
-    }
-   } else {
-     txt = '<span style="color:red">Grab a new quest!</span>';
-   }
-   if (document.querySelector('#QQOL_quests'))
-    document.querySelector('#QQOL_quests').innerHTML=txt;
+        if (this.settings.show_ttke) {
+            document.getElementById('QQOL_kingdomexploration_div').style.display = 'block';
+        } else {
+            document.getElementById('QQOL_kingdomexploration_div').style.display = 'none';
+        }
   }
 
- TimeToLevelUp() {
-   if (document.getElementById('profile-next-level')) {
-   let txt = document.getElementById('profile-next-level').innerHTML;
-   let actionVal = parseInt(txt.replace(/\D/g,''));
-   txt='Time to next level: '+this.ActionsToTime(actionVal);
-   if (document.getElementById('QQOL_time_to_levelup'))
-    document.getElementById('QQOL_time_to_levelup').innerHTML = txt;
+    get settingsPageHtml() {
+        return `
+<div id='QQOL_settings' class='main'>
+    <div class='centered'>
+        <button id='exitSettings'>Close</button>
+        <h1>Welcome to QQOL</h1>
+        <p>Adjust plugin settings here</p>
+    </div>
+    <div class='block left'>
+        <h2>Left menu</h2>
+        <input for='show_itr'    class='QQOLCheck' type='checkbox'><span>Idle time remaining<span></br>
+        <input for='show_nl'     class='QQOLCheck' type='checkbox'><span>Time to next level<span></br>
+        <input for='show_ttqc'   class='QQOLCheck' type='checkbox'><span>Time to quest completion<span></br>
+        <input for='show_tttl'   class='QQOLCheck' type='checkbox'><span>Time to target level<span></br>
+        <input for='show_ttke'   class='QQOLCheck' type='checkbox'><span>Time to kingdom exploration end<span></br>
+    </div>
+    <div class='block center'>
+        <span>Target level: </span><input for='target_level' type='number' placeholder='9001'></input>
+    </div>
+    <div class='block right'>
+        <span>Made by <span class='QQOL-link-action' id='contactme'>FiammaTheGreat</span></br>
+        <span>Send relics if ya want.</span>
+    </div>
+</div>
+        `;
     }
-
- }
-
- ExpToLevel() {
-   let expBank = 0;
-   let currentLevel = this.gameData.playerLevelsService.battling.level;
-   if (!localStorage.getItem('targetLevel')) return false;
-   let targetLevel = parseInt(localStorage.getItem('targetLevel'));
-   let currentExp = this.gameData.playerLevelsService.battling.exp.have;
-   if (targetLevel == 0) return false;
-   for (let i=currentLevel; i<targetLevel; i++) {
-     let expToLevel = Math.round(25000 * Math.pow(i, 0.5));
-     let levelTemp = i;
-     while (levelTemp > 1500) {
-       expToLevel +=  250 * Math.pow((levelTemp - 1500), 1.25)
-       levelTemp -= 1500;
-     }
-     expBank+=expToLevel;
-   }
-   return expBank-currentExp;
- }
-
- TimeToTargetLevel() {
-   if (!localStorage.getItem('targetLevel')) {
-     return 'Time to target level: check settings';
-   }
-   let actionVal;
-   if (this.gameData.playerActionService.actionResult.income && this.gameData.playerActionService.actionResult.income.experience.amount) {
-      actionVal = this.gameData.playerActionService.actionResult.income.experience.amount;
-   } else {return '';}
-   let totalExpReq = this.ExpToLevel();
-   let actionsReq = Math.ceil(totalExpReq/actionVal);
-   let tLevel = localStorage.targetLevel;
-   return 'Time to level '+tLevel+': '+this.ActionsToTime(actionsReq);
- }
-
- ReflectTimeToTargetLevel() {
-   let div = document.getElementById('QQOL_TTTL');
-   if (!div) return;
-   div.innerHTML = this.TimeToTargetLevel();
- }
-
- TrySearchProviderUI() {
-   if (document.querySelector('.cdk-column-username.mat-column-username')&&!(document.getElementById('QQOL_service_search'))) {
-     if (this.currentTab == 'enchanting' || this.currentTab == 'crafting') {
-       let serviceSearchBar = document.createElement('input');
-       serviceSearchBar.id = 'QQOL_service_search';
-       serviceSearchBar.placeholder='Find service provider by name';
-       serviceSearchBar.classList.add('QQOL-searchbar');
-       serviceSearchBar.addEventListener('input', ()=>{this.FindProvider()});
-       let insertBefore = document.querySelector('.mat-table.cdk-table.mat-elevation-z8');
-       insertBefore.parentNode.insertBefore(serviceSearchBar,insertBefore)
-    }
-   }
-   //on services tab
- }
-
- FindProvider() {
-   let sTerm = document.getElementById('QQOL_service_search').value.toLowerCase();
-   let users = document.querySelectorAll('td.cdk-column-username.mat-column-username > div');
-   for (let i=0; i<users.length; i++) {
-     if (users[i].innerHTML.toLowerCase().includes(sTerm)) {
-       users[i].parentNode.parentNode.removeAttribute('style');
-     } else {
-       users[i].parentNode.parentNode.style.display='none'
-     }
-   }
- }
- ActionsToTime(actions) {
-   if (actions<0) return '00:00';
-   let minval = Math.floor(actions/10);
-   let hourval = Math.floor(minval/60);
-   let remMinutes = minval%60;
-   let remSeconds = actions/10
-   let subSeconds =  this.gameData.partyService.isFighting?this.gameData.partyService.countDown:this.gameData.playerActionService.countDown;
-   if ((actions*6%60) - (6-subSeconds)  < 0)
-    remMinutes--;
-
-    let remSec = actions*6%60;
-    let a = 6-subSeconds;
-    if (remSec-a<0) {remSec=remSec+60-a} else {remSec = remSec-a;}
-    if (remSec<10) remSec='.0'+remSec;
-    else remSec='.'+remSec;
-
-   let dayVal = Math.floor(hourval/24);
-   return ((dayVal>0)?(dayVal+'d '):(''))+hourval%24+':'+(remMinutes<10?('0'+remMinutes):(remMinutes))+remSec;
- }
-
-
-
- SecondsToString(seconds)
-{
-  var numyears = Math.floor(seconds / 31536000);
-  var numdays = Math.floor((seconds % 31536000) / 86400);
-  var numhours = Math.floor(((seconds % 31536000) % 86400) / 3600);
-  var numminutes = Math.floor((((seconds % 31536000) % 86400) % 3600) / 60);
-  var numseconds = Math.floor((((seconds % 31536000) % 86400) % 3600) % 60);
-  return numhours.toString().padStart(2, '0') + ":" + numminutes.toString().padStart(2, '0') + "." + numseconds.toString().padStart(2, '0');
 }
 
-
-
-
- get myEquipmentData() {
-   let myID = this.gameData.gameService.playerData.id;
-   return this.gameData.partyService.partyOverview.partyInformation[myID].equipment;
- }
-
-  IsPlayerRelated(name) {
-    if (this.playerRelatives.includes(name))
-      return true;
-    else
-      return false;
- }
-
-
-
-  CheckLatestVersion() {
-    let modbody = this;
-    var request = new XMLHttpRequest();
-    request.open('GET', 'https://api.github.com/repos/countto25/queslarqqol/tags', true);
-    request.onload = function() {
-      if (request.status >= 200 && request.status < 400) {
-        var data = JSON.parse(request.responseText);
-        console.log(data);
-        let latestVersion = data[1].name;
-        console.log(parseFloat(latestVersion) + ' vs ' +parseFloat(modbody.ver));
-        console.log(modbody.ver);
-        console.log(parseFloat(latestVersion) > parseFloat(modbody.ver));
-        if ((parseFloat(latestVersion) > parseFloat(modbody.ver))) {
-          let txt = 'QQOL v'+modbody.ver+'. <a target="_blank" href="https://countto25.github.io/QueslarQQOL?update=true" class="QQOL-link-action" style="color:red; text-decoration: none">Please update</a>';
-          document.querySelector('#toSettings').innerHTML=txt;
-        } else if (parseFloat(latestVersion) < parseFloat(modbody.ver)) {
-          let txt = 'QQOL v'+modbody.ver+'. <span style="color:green; text-decoration: none">Maybe do your actual job?</span>';
-          document.querySelector('#toSettings').innerHTML=txt;
-        }
-      } else {console.log('error getting new version :')}
-    }
-    request.send();
-  }
-
-  fetchHTML(url) {
-    if( 'undefined' == typeof(url) ) return false;
-    let p;
-    if( document.all ){
-      p = new ActiveXObject("Microsoft.XMLHTTP");
-    } else {
-    p = new XMLHttpRequest();
-    }
-    let rnd = Math.random().toString().substring(3);
-    if( url.indexOf('?') > -1 )
-    {
-      url+='&rnd='+rnd;
-    }
-    else
-    {
-      url+='?rnd='+rnd;
-    }
-    p.open("GET",url,false);
-    p.send(null);
-    return p.responseText;
-}
-
-  DoUI() {
-    let div = document.createElement("div");
-    let settingsmenu = this.fetchHTML('https://countto25.github.io/QueslarQQOL/menu.html');
-    div.classList.add("QQOLsettings");
-    div.style.display = 'none';
-    div.innerHTML = settingsmenu;
-    let modbody = this;
-    document.body.appendChild(div);
-    document.querySelector('#exitSettings').onclick = function() {
-      document.querySelector('.QQOLsettings').style.display='none';
-      modbody.ReflectSettings();
-    }
-    document.querySelector('#contactme').onclick = function() {
-      document.querySelector('.chat-input ').value='/w FiammaTheGreat';
-      document.querySelector('.QQOLsettings').style.display='none';
-      modbody.ReflectSettings();
-    }
-    document.querySelector('#toSettings').onclick = function() {
-      document.querySelector('.QQOLsettings').style.display='block';
-    }
-    let checks = document.querySelectorAll('input[type=checkbox].QQOLCheck');
-    checks.forEach(check => {
-      check.oninput = function() {
-        localStorage.setItem('QQOL_'+this.getAttribute('for'), this.checked?1:0);
-        console.log(this.checked?1:0);
-      }
-    });
-    document.querySelector('input[for=tttl_value]').oninput = function() {
-      localStorage.setItem('targetLevel', this.value);
-    }
-  }
-  SetupSettings() {
-    if (localStorage.getItem('QQOL_itr_show')===null) {
-      localStorage.setItem('QQOL_itr_show', 1);
-    }
-    if (localStorage.getItem('QQOL_nl_show')===null) {
-      localStorage.setItem('QQOL_nl_show', 1);
-    }
-    if (localStorage.getItem('QQOL_ttqc_show')===null) {
-      localStorage.setItem('QQOL_ttqc_show', 1);
-    }
-
-    if (localStorage.getItem('QQOL_tttl_show')===null) {
-      localStorage.setItem('QQOL_tttl_show', 0);
-    }
-    if (localStorage.getItem('QQOL_ttke_show')===null) {
-        localStorage.setItem('QQOL_ttke_show', 0);
-    }
-
-    if (localStorage.getItem('QQOL_itr_show') === '0') {
-      document.querySelector('input[for=itr_show]').checked = false;
-    } else {
-      document.querySelector('input[for=itr_show]').checked = true;
-    }
-    if (localStorage.getItem('QQOL_nl_show') === '0') {
-      document.querySelector('input[for=nl_show]').checked = false;
-    } else {
-      document.querySelector('input[for=nl_show]').checked = true;
-    }
-
-    if (localStorage.getItem('QQOL_ttqc_show') === '0') {
-      document.querySelector('input[for=ttqc_show]').checked = false;
-    } else {
-      document.querySelector('input[for=ttqc_show]').checked = true;
-    }
-
-    if (localStorage.getItem('QQOL_tttl_show') === '0') {
-      document.querySelector('input[for=tttl_show]').checked = false;
-    } else {
-      document.querySelector('input[for=tttl_show]').checked = true;
-    }
-
-    if (localStorage.getItem('QQOL_ttke_show') === '0') {
-      document.querySelector('input[for=ttke_show]').checked = false;
-    } else {
-      document.querySelector('input[for=ttke_show]').checked = true;
-    }
-
-    let tl = (localStorage.getItem('targetLevel') || -1);
-    if (tl != -1) {
-      document.querySelector('input[for=tttl_value]').value = parseInt(tl);
-    }
-  }
-
-  ReflectSettings() {
-    if (localStorage.getItem('QQOL_itr_show') === '0') {
-      document.querySelector('#QQOL_remaining_time').style.display = 'none';
-    } else {
-      document.querySelector('#QQOL_remaining_time').style.display = 'block';
-    }
-
-    if (localStorage.getItem('QQOL_nl_show') === '0') {
-      document.querySelector('#QQOL_time_to_levelup').style.display = 'none';
-    } else {
-      document.querySelector('#QQOL_time_to_levelup').style.display = 'block';
-    }
-
-    if (localStorage.getItem('QQOL_ttqc_show') === '0') {
-      document.querySelector('#QQOL_quests').style.display = 'none';
-    } else {
-      document.querySelector('#QQOL_quests').style.display = 'block';
-    }
-
-    if (localStorage.getItem('QQOL_ttke_show') === '0') {
-      document.querySelector('#QQOL_kingdomexploration').style.display = 'none';
-    } else {
-      document.querySelector('#QQOL_kingdomexploration').style.display = 'block';
-    }
-
-    if (localStorage.getItem('QQOL_tttl_show') === '0') {
-      document.querySelector('#QQOL_TTTL').style.display = 'none';
-    } else {
-      document.querySelector('#QQOL_TTTL').style.display = 'block';
-    }
-
-  }
-
-  AdvanceFromCurrent(exp) {
-    let projectedLevel = this.gameData.playerLevelsService.battling.level;
-    while (exp > 0) {
-      let expToLevel = Math.round(25000 * Math.pow(projectedLevel, 0.5));
-      let levelTemp = projectedLevel;
-      while (levelTemp > 1500) {
-        expToLevel +=  250 * Math.pow((levelTemp - 1500), 1.25)
-        levelTemp -= 1500;
-      }
-      projectedLevel++;
-      exp-=expToLevel;
-    }
-    return projectedLevel;
-  }
- }
 
 
 //TY GREASEMONKEY
 var QQOL = null;
-console.log('init load');
+console.log('countto25.queslar.qqol    Init load');
 var QQOLSetupInterval = setInterval(QQOLGMSetup, 1000);
-function QQOLGMSetup() {
-  if (document.getElementById('profile-next-level')&&QQOL===null) {
-    console.log('load OK');
-    clearInterval(QQOLSetupInterval);
-    console.log(QQOLSetupInterval+'');
-    QQOL = new FTGMod();
 
-  } else {
-    console.log('retry init...');
-    console.log('next level?'+document.getElementById('profile-next-level'));
-    console.log((document.getElementById('profile-next-level')&&QQOL===null));
-  }
+function QQOLGMSetup() {
+    if (document.getElementById('profile-next-level') && QQOL === null) {
+        console.log('countto25.queslar.qqol    Init OK');
+        clearInterval(QQOLSetupInterval);
+        console.log('countto25.queslar.qqol    retry timer: ' + QQOLSetupInterval);
+        QQOL = new FTGMod();
+    } else {
+        console.log('countto25.queslar.qqol    Init failed. Will retry in one second.');
+        console.log('countto25.queslar.qqol    Next level: ' + document.getElementById('profile-next-level'));
+        console.log('countto25.queslar.qqol    QQOL: ' + QQOL);
+    }
 }
