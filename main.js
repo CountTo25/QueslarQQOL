@@ -38,7 +38,6 @@ class FTGMod {
         this.updateInterval = null;
         this.actionsWarning = false;
         this.fightTxtChanged = false;
-        this.incomeInfo = false;
         this.questMsgType = -1;
 
 
@@ -85,7 +84,6 @@ class FTGMod {
     }
     OnNewTab(tname) {
         // If the tab changed, then any of the main page elements that may have been added by QQOL will have been removed, so reset all of those trackers.
-        this.incomeInfo = false;
         this.fightTxtChanged = false;
 
         for (let i=0; i<this.ontabhooks.length; i++) {
@@ -227,12 +225,13 @@ class FTGMod {
             QQOLkdexp.style.display = 'none';
         }
 
-        document.getElementById('QQOL_holder').appendChild(QQOLinfo);
-        document.getElementById('QQOL_holder').appendChild(idletimeremainingtooltip);
-        document.getElementById('QQOL_holder').appendChild(timetoleveluptooltip);
-        document.getElementById('QQOL_holder').appendChild(QQOLquests);
-        document.getElementById('QQOL_holder').appendChild(QQOLTimeToTargetLevel);
-        document.getElementById('QQOL_holder').appendChild(QQOLkdexp);
+        let qqolHolder = document.getElementById('QQOL_holder')
+        qqolHolder.appendChild(QQOLinfo);
+        qqolHolder.appendChild(idletimeremainingtooltip);
+        qqolHolder.appendChild(timetoleveluptooltip);
+        qqolHolder.appendChild(QQOLquests);
+        qqolHolder.appendChild(QQOLTimeToTargetLevel);
+        qqolHolder.appendChild(QQOLkdexp);
     }
 
     CheckLatestVersion() {
@@ -251,11 +250,11 @@ class FTGMod {
                 if (latestVersion > thisVersion) {
                     qqolMod.logText("Newer version available");
                     let txt = '<a target="_blank" href="https://countto25.github.io/QueslarQQOL?update=true" class="QQOL-link-action" style="color:red; text-decoration: none">Please update</a>';
-                    document.querySelector('#updateMsg').innerHTML=txt;
+                    document.getElementById('updateMsg').innerHTML=txt;
                 } else if (latestVersion < thisVersion) {
                     qqolMod.logText("Only older versions available");
                     let txt = '<span style="color:green; text-decoration: none">Maybe do your actual job?</span>';
-                    document.querySelector('#updateMsg').innerHTML=txt;
+                    document.getElementById('updateMsg').innerHTML=txt;
                 }
             } else {
                 console.log('countto25.queslar.qqol    Error getting latest version information.')
@@ -318,10 +317,9 @@ class FTGMod {
                 this.fightTxtChanged = true;
 
                 // The above text change is only meant to be a warning, but the button is still clickable and will refresh this tab (maybe the user put on a larger action set and wants to refresh to pick even more actions).
-                // That removes the income div and requires the fight button text to go back to normal. Attach a function to set those up.
+                // That requires the fight button text to go back to normal. Attach a function to set those up.
                 document.querySelector('[joyridestep="startingTutorialSix"]').addEventListener("click", (e) => {
                     document.querySelector('[joyridestep="startingTutorialSix"]').childNodes[0].innerHTML = 'Fight';
-                    this.incomeInfo = false;
                 });
             } else if (this.gameData.playerActionService.actions.remaining <= this.gameData.playerActionService.actions.total
                     && this.gameData.playerActionService.currentSkill == "battling"
@@ -334,42 +332,46 @@ class FTGMod {
     }
 
     IncomePerHour() {
-        if (this.currentTab == 'battle' || this.currentTab == 'party-battle') {
-            let infospan;
-            let suffix = (this.currentTab == 'party-battle')?'p':'s';
+        if (this.gameData.playerActionService.currentSkill != 'battling' || (this.currentTab != 'battle' && this.currentTab != 'party-battle')) {
+            return;
+        }
 
-            if (this.incomeInfo) {
-                infospan = document.querySelector('#QQOL_GEPH_'+suffix);
-            } else {
-                infospan = document.createElement('div');
-                infospan.style.marginTop = '10px';
-                infospan.id='QQOL_GEPH_'+suffix;
-                infospan.innerHTML = "<span class='QQOL-tooltip'><span id='QQOL_income_gold'></span> gold and <span id='QQOL_income_exp'></span> experience per hour<span class='QQOL-tooltiptext'>Unless you die</span></span>";
-                document.querySelector('.action-result-value-container').appendChild(infospan);
-                this.incomeInfo = true;
+        let isParty = this.gameData.partyService.isFighting;
+        if ((this.currentTab == 'battle' && isParty) || (this.currentTab == 'party-battle' && !isParty)) {
+            return;
+        }
+
+        if ((!isParty && this.gameData.playerActionService.actionResult.victory) || (isParty && this.gameData.partyService.actionResult.victory)) {
+            // Lots of things reset the fighting page without a consistent hook to tie in to (clicking the fight button again, clicking the patch notes or logs tab across the top)
+            // in order to remove/reset the "display is already there" flag (and viewing the patch notes or log page doesn't even actually remove the control anyway, just makes it
+            // inaccesible). So instead, try to get the gold placeholder by id (which will hopefully be a quick lookup) to determine if the fields need to be added or just updated.
+            if (document.getElementById('QQOL_income_gold') === null) {
+                let resultElem = document.querySelector('.action-result-value-container');
+                if (resultElem === null) {
+                    // We should be on the right display, the element the income info would be added to is not present. Maybe the patch notes or the log has been pulled up.
+                    // Skip doing anything with the income info block.
+                    return;
+                } else {
+                    let infospan = document.createElement('div');
+                    infospan.style.marginTop = '10px';
+                    infospan.id='QQOL_GEPH';
+                    infospan.innerHTML = "<span class='QQOL-tooltip'><span id='QQOL_income_gold'></span> gold and <span id='QQOL_income_exp'></span> experience per hour<span class='QQOL-tooltiptext'>Unless you die</span></span>";
+                    resultElem.appendChild(infospan);
+                }
             }
 
-            let update = false;
             let exp = 1;
             let gold = 1;
-            if (this.currentTab == 'party-battle') {
-                if (Object.keys(this.gameData.partyService.actionResult).length != 0) {
-                    exp = this.gameData.partyService.actionResult.income.experience.amount;
-                    gold = this.gameData.partyService.actionResult.income.gold.amount;
-                    update = true;
-                }
+            if (isParty) {
+                exp = this.gameData.partyService.actionResult.income.experience.amount;
+                gold = this.gameData.partyService.actionResult.income.gold.amount;
             } else {
-                if (Object.keys(this.gameData.playerActionService.actionResult).length!=0) {
-                    exp = this.gameData.playerActionService.actionResult.income.experience.amount;
-                    gold = this.gameData.playerActionService.actionResult.income.gold.amount;
-                    update = true;
-                }
+                exp = this.gameData.playerActionService.actionResult.income.experience.amount;
+                gold = this.gameData.playerActionService.actionResult.income.gold.amount;
             }
 
-            if (update) {
-                document.querySelector('#QQOL_income_gold').innerHTML = (gold*600).toLocaleString();
-                document.querySelector('#QQOL_income_exp').innerHTML = (exp*600).toLocaleString();
-            }
+            document.getElementById('QQOL_income_gold').innerHTML = (gold*600).toLocaleString();
+            document.getElementById('QQOL_income_exp').innerHTML = (exp*600).toLocaleString();
         }
     }
 
@@ -389,22 +391,22 @@ class FTGMod {
             document.getElementById('QQOL_itr_solo_tooltipvalue').innerHTML = actionsRemaining;
 
             let partyActionsRemaining = 0;
-            if (this.gameData.partyService.hasParty) {
+            let totalActionsRemaining = actionsRemaining;
+            if (this.gameData.partyService.hasParty && this.gameData.partyService.isFighting) {
                 let playerId = this.gameData.gameService.playerData.id;
-                let partyActionsRemaining = this.gameData.partyService.partyOverview.partyInformation[playerId].actions.daily_actions_remaining;
-
-                if (this.gameData.partyService.isFighting) {
-                    actionsRemaining += partyActionsRemaining;
-                }
+                partyActionsRemaining = this.gameData.partyService.partyOverview.partyInformation[playerId].actions.daily_actions_remaining;
+                totalActionsRemaining += partyActionsRemaining;
             }
 
             document.getElementById('QQOL_itr_party_tooltipvalue').innerHTML = partyActionsRemaining;
-            document.getElementById('QQOL_remaining_time').innerHTML = this.ActionsToTime(actionsRemaining);
+            document.getElementById('QQOL_remaining_time').innerHTML = this.ActionsToTime(totalActionsRemaining);
 
-            if (this.actionsRemaining < 1 && !this.actionsWarning) {
+            if (actionsRemaining < 1 && !this.actionsWarning) {
+                this.logText("Actions newly fatigued.");
                 document.getElementById('QQOL_remaining_time_div').innerHTML += "<span id='QQOL_itr_warning' style='color: red'>Restart your actions!</span>";
                 this.actionsWarning = true;
-            } else if (this.actionsRemaining > 0 && this.actionsWarning) {
+            } else if (actionsRemaining > 0 && this.actionsWarning) {
+                this.logText("Actions no longer fatigued.");
                 document.getElementById('QQOL_itr_warning').remove();
                 this.actionsWarning = false;
             }
@@ -426,7 +428,7 @@ class FTGMod {
 
             let diff = timetoend - now;
             let time = this.SecondsToString(diff);
-            document.querySelector('#QQOL_kingdomexploration').innerHTML = time;
+            document.getElementById('QQOL_kingdomexploration').innerHTML = time;
         }
     }
 
@@ -441,31 +443,31 @@ class FTGMod {
             if (cQuest.objectiveType=='actions') {
                 if (this.questMsgType != 1) {
                     // Change the quest message to the HTML appropriate for this type of quest.
-                    document.querySelector('#QQOL_quests').innerHTML = 'Time to quest completion: <span id="QQOL_quest_time"></span>';
+                    document.getElementById('QQOL_quests').innerHTML = 'Time to quest completion: <span id="QQOL_quest_time"></span>';
                     this.questMsgType = 1;
                 }
                 // The quest message HTML is (now) set up, just update the values.
                 let remaining = cQuest.objectiveAmount - cQuest.currentProgress;
-                document.querySelector('#QQOL_quest_time').innerHTML = this.ActionsToTime(remaining);
+                document.getElementById('QQOL_quest_time').innerHTML = this.ActionsToTime(remaining);
             } else if (cQuest.objectiveType=='kills') {
                 if (this.gameData.playerActionService.currentSkill=='battling') {
                     if (!this.gameData.partyService.isFighting) {
                         if (this.questMsgType != 2) {
                             // Change the quest message to the HTML appropriate for this type of quest.
-                            document.querySelector('#QQOL_quests').innerHTML = '<span class="QQOL-tooltip">Time to quest completion<span class="QQOL-tooltiptext">If you keep on fighting solo and avoiding death</span></span>: <span id="QQOL_quest_time"></span>';
+                            document.getElementById('QQOL_quests').innerHTML = '<span class="QQOL-tooltip">Time to quest completion<span class="QQOL-tooltiptext">If you keep on fighting solo and avoiding death</span></span>: <span id="QQOL_quest_time"></span>';
                             this.questMsgType = 2;
                         }
                         // The quest message HTML is (now) set up, just update the values.
                         let remaining = cQuest.objectiveAmount - cQuest.currentProgress;
-                        document.querySelector('#QQOL_quest_time').innerHTML = this.ActionsToTime(remaining);
+                        document.getElementById('QQOL_quest_time').innerHTML = this.ActionsToTime(remaining);
                     } else if (this.questMsgType != 4) {
                         // Change the quest message to the HTML appropriate for this type of quest and activity.
-                        document.querySelector('#QQOL_quests').innerHTML = 'Kills quest active, but party kills do not count.';
+                        document.getElementById('QQOL_quests').innerHTML = "Kills quest active, but party doesn't count.";
                         this.questMsgType = 4;
                     }
                 } else if (this.questMsgType != 3) {
                     // Change the quest message to the HTML appropriate for this type of quest and activity.
-                    document.querySelector('#QQOL_quests').innerHTML = '<span style="color:red">Kills quest active, but not in battle.</span>';
+                    document.getElementById('QQOL_quests').innerHTML = '<span style="color:red">Kills quest active, but not battling.</span>';
                     this.questMsgType = 3;
                 }
             } else if (cQuest.objectiveType=='gold') {
@@ -473,7 +475,7 @@ class FTGMod {
                     if (!this.gameData.partyService.isFighting) {
                         if (this.questMsgType != 5) {
                             // Change the quest message to the HTML appropriate for this type of quest.
-                            document.querySelector('#QQOL_quests').innerHTML = '<span class="QQOL-tooltip">Time to quest completion<span class="QQOL-tooltiptext">At <span id="QQOL_quest_gpt"></span> gold per turn</span></span>: <span id="QQOL_quest_time"></span>';
+                            document.getElementById('QQOL_quests').innerHTML = '<span class="QQOL-tooltip">Time to quest completion<span class="QQOL-tooltiptext">At <span id="QQOL_quest_gpt"></span> gold per turn</span></span>: <span id="QQOL_quest_time"></span>';
                             this.questMsgType = 5;
                         }
                         // The quest message HTML is (now) set up, just update the values.
@@ -482,20 +484,20 @@ class FTGMod {
                             gpt+=this.gameData.playerActionService.actionResult.income.gold.tax;
                         }
                         let actionsToCompletion = Math.ceil((cQuest.objectiveAmount - cQuest.currentProgress)/gpt);
-                        document.querySelector('#QQOL_quest_time').innerHTML = this.ActionsToTime(actionsToCompletion);
+                        document.getElementById('QQOL_quest_time').innerHTML = this.ActionsToTime(actionsToCompletion);
                     } else if (this.questMsgType != 7) {
                         // Change the quest message to the HTML appropriate for this type of quest and activity.
-                        document.querySelector('#QQOL_quests').innerHTML = 'Gold quest active, but party gold does not count.';
+                        document.getElementById('QQOL_quests').innerHTML = 'Gold quest active, but party gold does not count.';
                         this.questMsgType = 7;
                     }
                 } else if (this.questMsgType != 6) {
                     // Change the quest message to the HTML appropriate for this type of quest and activity.
-                    document.querySelector('#QQOL_quests').innerHTML = '<span style="color:red">Gold quest active, but not in battle.</span>';
+                    document.getElementById('QQOL_quests').innerHTML = '<span style="color:red">Gold quest active, but not in battle.</span>';
                     this.questMsgType = 6;
                 }
             }
         } else if (this.questMsgType != 0) {
-            document.querySelector('#QQOL_quests').innerHTML = '<span style="color:red">Grab a new quest!</span>';
+            document.getElementById('QQOL_quests').innerHTML = '<span style="color:red">Grab a new quest!</span>';
             this.questMsgType = 0;
         }
     }
@@ -556,18 +558,22 @@ class FTGMod {
         document.body.appendChild(div);
 
         let qqolMod = this;
-        document.querySelector('#exitSettings').onclick = function() {
+        document.getElementById('exitSettings').onclick = function() {
             qqolMod.applySettings();
             document.querySelector('.QQOLsettings').style.display='none';
         }
 
-        document.querySelector('#contactme').onclick = function() {
+        document.getElementById('contactme').onclick = function() {
             qqolMod.applySettings();
-            document.querySelector('.chat-input ').value='/w FiammaTheGreat';
+            let chat = document.querySelector('.chat-input ');
+            if (chat === null) {
+                chat = document.querySelector('.chat-input-reverse');
+            }
+            chat.value='/w FiammaTheGreat';
             document.querySelector('.QQOLsettings').style.display='none';
         }
 
-        document.querySelector('#toSettings').onclick = function() {
+        document.getElementById('toSettings').onclick = function() {
             document.querySelector('.QQOLsettings').style.display='block';
         }
 
@@ -598,33 +604,33 @@ class FTGMod {
 
         // Now apply all of the settings (new or not).
         if (this.settings.show_itr) {
-            document.querySelector('#QQOL_remaining_time_div').style.display = 'block';
+            document.getElementById('QQOL_remaining_time_div').style.display = 'block';
         } else {
-            document.querySelector('#QQOL_remaining_time_div').style.display = 'none';
+            document.getElementById('QQOL_remaining_time_div').style.display = 'none';
         }
 
         if (this.settings.show_nl) {
-            document.querySelector('#QQOL_time_to_levelup_div').style.display = 'block';
+            document.getElementById('QQOL_time_to_levelup_div').style.display = 'block';
         } else {
-            document.querySelector('#QQOL_time_to_levelup_div').style.display = 'none';
+            document.getElementById('QQOL_time_to_levelup_div').style.display = 'none';
         }
 
         if (this.settings.show_ttqc) {
-            document.querySelector('#QQOL_quests').style.display = 'block';
+            document.getElementById('QQOL_quests').style.display = 'block';
         } else {
-            document.querySelector('#QQOL_quests').style.display = 'none';
+            document.getElementById('QQOL_quests').style.display = 'none';
         }
 
         if (this.settings.show_tttl) {
-            document.querySelector('#QQOL_TTTL').style.display = 'block';
+            document.getElementById('QQOL_TTTL').style.display = 'block';
         } else {
-            document.querySelector('#QQOL_TTTL').style.display = 'none';
+            document.getElementById('QQOL_TTTL').style.display = 'none';
         }
 
         if (this.settings.show_ttke) {
-            document.querySelector('#QQOL_kingdomexploration_div').style.display = 'block';
+            document.getElementById('QQOL_kingdomexploration_div').style.display = 'block';
         } else {
-            document.querySelector('#QQOL_kingdomexploration_div').style.display = 'none';
+            document.getElementById('QQOL_kingdomexploration_div').style.display = 'none';
         }
   }
 
