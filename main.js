@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    countto25.queslar.qqol
-// @version      0.65
+// @version      1.00
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -20,7 +20,7 @@
 
 class FTGMod {
     constructor() {
-        this.ver = '0.65';
+        this.ver = '1.00';
         this.logging = true;
 
         //DECLARE SHIT
@@ -28,6 +28,8 @@ class FTGMod {
         this.ontabhooks = [];
         this.currentTab = 'battle';
         this.updateInterval = null;
+        this.fightTxtChanged = false;
+        this.incomeInfo = false;
 
         // Setup/loading.
         this.setupObservers();
@@ -41,9 +43,11 @@ class FTGMod {
         this.HookOnAction(() => {this.Update()});
         this.HookOnAction(() => {if (this.updateInterval == null) {this.updateInterval = setInterval(() => {qqolMod.Update()}, 1000)}});
         this.HookOnAction(() => this.IncomePerHour());
+        this.HookOnAction(() => this.BlockActionsOnOvercap());
 
         this.HookOnTab((tabName) => {this.logText("Tab Name: " + tabName)});
-        this.HookOnTab((tabName) => {if (tabName==='battle') this.BlockActionsOnOvercap()});
+        this.HookOnTab((tabName) => {this.IncomePerHour()});
+        this.HookOnTab((tabName) => {this.BlockActionsOnOvercap()});
 
 
         // Check for an update right now.
@@ -69,6 +73,10 @@ class FTGMod {
         }
     }
     OnNewTab(tname) {
+        // If the tab changed, then any of the main page elements that may have been added by QQOL will have been removed, so reset all of those trackers.
+        this.incomeInfo = false;
+        this.fightTxtChanged = false;
+
         for (let i=0; i<this.ontabhooks.length; i++) {
             this.ontabhooks[i](tname);
         }
@@ -253,48 +261,72 @@ class FTGMod {
         return ((dayVal>0)?(dayVal+'d '):(''))+hourval%24+':'+(remMinutes<10?('0'+remMinutes):(remMinutes))+remSec;
     }
 
- BlockActionsOnOvercap() {
-   return '';
-   //find smth to do with issue
-   if (this.gameData.playerActionService.actions.remaining > this.gameData.playerActionService.actions.total &&
-       this.gameData.playerActionService.currentSkill == "battling" &&
-       !this.gameData.partyService.isFighting) {
-     document.querySelector('[joyridestep="startingTutorialSix"]').style.pointerEvents = 'none';
-     document.querySelector('[joyridestep="startingTutorialSix"]').innerHTML = 'Refreshing will reset action cap';
-   } else {
-     document.querySelector('[joyridestep="startingTutorialSix"]').style.pointerEvents = 'unset';
-     document.querySelector('[joyridestep="startingTutorialSix"]').innerHTML = 'Fight';
-   }
- }
- 
- IncomePerHour() {
-  let infospan;
-  let subname = (this.currentTab == 'party')?'p':'s'
-  if (!document.querySelector('#QQOL_GEPH_'+subname)) {
-    let appendTo = document.querySelector('.action-result-value-container');
-    infospan = document.createElement('div');
-    infospan.style.marginTop = '10px';
-    infospan.id='QQOL_GEPH_'+subname;
-    if (appendTo)
-      appendTo.appendChild(infospan);
-  } else {
-    infospan = document.querySelector('#QQOL_GEPH_'+subname);
-  }
-  if (this.currentTab == 'party') {
-    if (Object.keys(this.gameData.partyService.actionResult).length!=0) {
-      let exp = this.gameData.partyService.actionResult.income.experience.amount;
-      let gold = this.gameData.partyService.actionResult.income.gold.amount;
-      infospan.innerHTML = `(<span class='QQOL-tooltip'>${(gold*600).toLocaleString()} gold and ${(exp*600).toLocaleString()} experience per hour<span class='QQOL-tooltiptext'>Unless you die</span></span>)`;
+    BlockActionsOnOvercap() {
+        if (this.currentTab == 'battle') {
+            if (this.gameData.playerActionService.actions.remaining > this.gameData.playerActionService.actions.total
+                    && this.gameData.playerActionService.currentSkill == "battling"
+                    && !this.gameData.partyService.isFighting
+                    && !this.fightTxtChanged) {
+                this.logText("Player has extra actions.");
+                document.querySelector('[joyridestep="startingTutorialSix"]').childNodes[0].innerHTML = 'Refreshing will reset action cap.';
+                this.fightTxtChanged = true;
+
+                // The above text change is only meant to be a warning, but the button is still clickable and will refresh this tab (maybe the user put on a larger action set and wants to refresh to pick even more actions).
+                // That removes the income div and requires the fight button text to go back to normal. Attach a function to set those up.
+                document.querySelector('[joyridestep="startingTutorialSix"]').addEventListener("click", (e) => {
+                    document.querySelector('[joyridestep="startingTutorialSix"]').childNodes[0].innerHTML = 'Fight';
+                    this.incomeInfo = false;
+                });
+            } else if (this.gameData.playerActionService.actions.remaining <= this.gameData.playerActionService.actions.total
+                    && this.gameData.playerActionService.currentSkill == "battling"
+                    && !this.gameData.partyService.isFighting
+                    && this.fightTxtChanged) {
+                document.querySelector('[joyridestep="startingTutorialSix"]').childNodes[0].innerHTML = 'Fight';
+                this.fightTxtChanged = false;
+            }
+        }
     }
-  } else {
-    if (Object.keys(this.gameData.playerActionService.actionResult).length!=0) {
-      let exp = this.gameData.playerActionService.actionResult.income.experience.amount;
-      let gold = this.gameData.playerActionService.actionResult.income.gold.amount;
-      infospan.innerHTML = `(<span class='QQOL-tooltip'>${(gold*600).toLocaleString()} gold and ${(exp*600).toLocaleString()} experience per hour<span class='QQOL-tooltiptext'>Unless you die</span></span>)`;
+
+    IncomePerHour() {
+        if (this.currentTab == 'battle' || this.currentTab == 'party-battle') {
+            let infospan;
+            let suffix = (this.currentTab == 'party-battle')?'p':'s';
+
+            if (this.incomeInfo) {
+                infospan = document.querySelector('#QQOL_GEPH_'+suffix);
+            } else {
+                infospan = document.createElement('div');
+                infospan.style.marginTop = '10px';
+                infospan.id='QQOL_GEPH_'+suffix;
+                infospan.innerHTML = "<span class='QQOL-tooltip'><span id='QQOL_income_gold'></span> gold and <span id='QQOL_income_exp'></span> experience per hour<span class='QQOL-tooltiptext'>Unless you die</span></span>";
+                document.querySelector('.action-result-value-container').appendChild(infospan);
+                this.incomeInfo = true;
+            }
+
+            let update = false;
+            let exp = 1;
+            let gold = 1;
+            if (this.currentTab == 'party-battle') {
+                if (Object.keys(this.gameData.partyService.actionResult).length != 0) {
+                    exp = this.gameData.partyService.actionResult.income.experience.amount;
+                    gold = this.gameData.partyService.actionResult.income.gold.amount;
+                    update = true;
+                }
+            } else {
+                if (Object.keys(this.gameData.playerActionService.actionResult).length!=0) {
+                    exp = this.gameData.playerActionService.actionResult.income.experience.amount;
+                    gold = this.gameData.playerActionService.actionResult.income.gold.amount;
+                    update = true;
+                }
+            }
+
+            if (update) {
+                document.querySelector('#QQOL_income_gold').innerHTML = (gold*600).toLocaleString();
+                document.querySelector('#QQOL_income_exp').innerHTML = (exp*600).toLocaleString();
+            }
+        }
     }
-  }
- }
- 
+
     Update() {
         this.TimeRemaining();
         this.TimeToLevelUp();
@@ -443,48 +475,28 @@ class FTGMod {
    div.innerHTML = this.TimeToTargetLevel();
  }
 
-  fetchHTML(url) {
-    if( 'undefined' == typeof(url) ) return false;
-    let p;
-    if( document.all ){
-      p = new ActiveXObject("Microsoft.XMLHTTP");
-    } else {
-    p = new XMLHttpRequest();
-    }
-    let rnd = Math.random().toString().substring(3);
-    if( url.indexOf('?') > -1 )
-    {
-      url+='&rnd='+rnd;
-    }
-    else
-    {
-      url+='?rnd='+rnd;
-    }
-    p.open("GET",url,false);
-    p.send(null);
-    return p.responseText;
-}
+    DoUI() {
+        let div = document.createElement("div");
+        div.classList.add("QQOLsettings");
+        div.style.display = 'none';
+        div.innerHTML = this.settingsPageHtml;
+        document.body.appendChild(div);
 
-  DoUI() {
-    let div = document.createElement("div");
-    let settingsmenu = this.fetchHTML('https://countto25.github.io/QueslarQQOL/menu.html');
-    div.classList.add("QQOLsettings");
-    div.style.display = 'none';
-    div.innerHTML = settingsmenu;
-    let modbody = this;
-    document.body.appendChild(div);
-    document.querySelector('#exitSettings').onclick = function() {
-      document.querySelector('.QQOLsettings').style.display='none';
-      modbody.ReflectSettings();
-    }
-    document.querySelector('#contactme').onclick = function() {
-      document.querySelector('.chat-input ').value='/w FiammaTheGreat';
-      document.querySelector('.QQOLsettings').style.display='none';
-      modbody.ReflectSettings();
-    }
-    document.querySelector('#toSettings').onclick = function() {
-      document.querySelector('.QQOLsettings').style.display='block';
-    }
+        let qqolMod = this;
+        document.querySelector('#exitSettings').onclick = function() {
+            document.querySelector('.QQOLsettings').style.display='none';
+            qqolMod.ReflectSettings();
+        }
+
+        document.querySelector('#contactme').onclick = function() {
+            document.querySelector('.chat-input ').value='/w FiammaTheGreat';
+            document.querySelector('.QQOLsettings').style.display='none';
+            qqolMod.ReflectSettings();
+        }
+
+        document.querySelector('#toSettings').onclick = function() {
+            document.querySelector('.QQOLsettings').style.display='block';
+        }
     let checks = document.querySelectorAll('input[type=checkbox].QQOLCheck');
     checks.forEach(check => {
       check.oninput = function() {
@@ -578,6 +590,33 @@ class FTGMod {
       document.querySelector('#QQOL_TTTL').style.display = 'none';
     } else {
       document.querySelector('#QQOL_TTTL').style.display = 'block';
+    }
+
+    get settingsPageHtml() {
+        return `
+<div id='QQOL_settings' class='main'>
+    <div class='centered'>
+        <button id='exitSettings'>Close</button>
+        <h1>Welcome to QQOL</h1>
+        <p>Adjust plugin settings here</p>
+    </div>
+    <div class='block left'>
+        <h2>Left menu</h2>
+        <input for='show_itr'    class='QQOLCheck' type='checkbox'><span>Idle time remaining<span></br>
+        <input for='show_nl'     class='QQOLCheck' type='checkbox'><span>Time to next level<span></br>
+        <input for='show_ttqc'   class='QQOLCheck' type='checkbox'><span>Time to quest completion<span></br>
+        <input for='show_tttl'   class='QQOLCheck' type='checkbox'><span>Time to target level<span></br>
+        <input for='show_ttke'   class='QQOLCheck' type='checkbox'><span>Time to kingdom exploration end<span></br>
+    </div>
+    <div class='block center'>
+        <span>Target level: </span><input for='target_level' type='number' placeholder='9001'></input>
+    </div>
+    <div class='block right'>
+        <span>Made by <span class='QQOL-link-action' id='contactme'>FiammaTheGreat</span></br>
+        <span>Send relics if ya want.</span>
+    </div>
+</div>
+        `;
     }
 }
 
