@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QQOL
 // @namespace    countto25.queslar.qqol
-// @version      0.64
+// @version      0.65
 // @description  Quality of Quality of Life!
 // @include *queslar.com/*
 // @require https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
@@ -19,92 +19,38 @@
 
 
 class FTGMod {
- constructor() {
-   this.ver = '0.64';
+    constructor() {
+        this.ver = '0.65';
+        this.logging = true;
 
+        //DECLARE SHIT
+        this.onactionhooks = [];
+        this.ontabhooks = [];
+        this.updateInterval = null;
 
         // Setup/loading.
         this.setupObservers();
+        this.setupDom();
         
+        // Add action and tab listeners.
    var modbody = this;
-    this.onactionhooks = [];
-
-
-   this.ontabhooks = [];
-   //I SUCK AT JS
-   //document.onclick = function(){modbody.Update()} //im retarded, look up hooks later
-                                                   //.clickable onclick?
-
-   //NEW DOM
-   var csselem = document.createElement("link");
-   csselem.setAttribute("rel", "stylesheet");
-   csselem.setAttribute("type", "text/css");
-   csselem.setAttribute("href", "https://countto25.github.io/QueslarQQOL/cssfix.css");
-   document.getElementsByTagName("head")[0].appendChild(csselem);
-
-   let QQOLholder = document.createElement('div');
-   QQOLholder.id = 'QQOL_holder';
-   document.getElementById('profile-next-level').parentNode.insertBefore(QQOLholder,document.getElementById('profile-next-level').nextSibling);
-   //document.getElementById('mat-tab-content-0-1').children[0].appendChild(QQOLholder);
-
-   let QQOLinfo = document.createElement('div');
-   QQOLinfo.style.marginTop = '10px';
-   QQOLinfo.id='QQOL_info';
-   QQOLinfo.innerHTML = '<mat-icon class="mat-icon material-icons" style="vertical-align: bottom: height: 16px; width: 16px; font-size: 16px">settings</mat-icon><span id="toSettings" class="QQOL-link-action">QQOL v'+this.ver+'</span>';
-
-   let QQOLquests = document.createElement('div');
-   QQOLquests.id='QQOL_quests';
-   QQOLquests.innerHTML = 'Loading...';
-
-   let QQOLkdexp = document.createElement('div');
-   QQOLkdexp.id='QQOL_kingdomexploration';
-   QQOLkdexp.innerHTML = '';
-
-
-   let QQOLTimeToTargetLevel = document.createElement('div');
-   QQOLTimeToTargetLevel.id='QQOL_TTTL';
-   if (!localStorage.targetLevel || parseInt(localStorage.QQOL_tttl_show)!=1)
-    QQOLTimeToTargetLevel.style.display = 'none';
-   QQOLTimeToTargetLevel.innerHTML = '';
-
-   let timetoleveluptooltip = document.createElement('div');
-   timetoleveluptooltip.id = 'QQOL_time_to_levelup';
-   let idletimeremainingtooltip = document.createElement('div');
-   idletimeremainingtooltip.id='QQOL_remaining_time';
-   document.getElementById('QQOL_holder').appendChild(QQOLinfo);
-   document.getElementById('QQOL_holder').appendChild(idletimeremainingtooltip);
-   document.getElementById('QQOL_holder').appendChild(timetoleveluptooltip);
-   document.getElementById('QQOL_holder').appendChild(QQOLquests);
-   document.getElementById('QQOL_holder').appendChild(QQOLTimeToTargetLevel);
-   document.getElementById('QQOL_holder').appendChild(QQOLkdexp);
-
-
-   //DECLARE SHIT
-   this.rememberquest = null;
-   this.activetab = null;
-   this.updateInterval = null;
-
-   //FINISH
    this.HookOnAction(() => {modbody.Update()});
-   this.HookOnAction(() => {if (modbody.rememberquest!=null && document.title.split(' - ')[1]!='Party') modbody.rememberquest--;});
    this.HookOnAction(() => {if (modbody.updateInterval == null) {modbody.updateInterval = setInterval(() => {modbody.Update()}, 100)}});
    this.HookOnAction(() => this.IncomePerHour());
 
-   this.HookOnTab((x) => {console.log(x)});
-   this.HookOnTab((x) => {modbody.activetab = x});
+        this.HookOnTab((tabName) => {this.logText("Tab Name: " + tabName)});
    this.HookOnTab((x) => {if (x==='battle') this.BlockActionsOnOvercap()});
 
-   setInterval(() => {modbody.CheckLatestVersion()}, 1000000);
-
-   this.CheckLatestVersion();
+        // Check for an update right now.
+        this.CheckLatestVersion();
+        // Continue checking for updates every hour.
+        setInterval(() => {modbody.CheckLatestVersion()}, 3600000);
    this.DoUI();
    this.SetupSettings();
    this.ReflectSettings();
 
-
-
-   console.log('loaded Quality of Quality of Life mod v'+this.ver+'. Have a nice day!');
- }
+        this.logText('Loaded Queslar Quality of Life mod v'+this.ver+'. Have a nice day!');
+    }
 
     HookOnAction(func, exec=false) {
         if (exec) func();
@@ -126,6 +72,16 @@ class FTGMod {
         }
     }
 
+
+    logText(text, objectData=null) {
+        if (this.logging) {
+            console.log("countto25.queslar.qqol    " + text);
+
+            if (objectData !== null) {
+                console.log(objectData);
+            }
+        }
+    }
 
     setupObservers() {
         let qqolMod = this;
@@ -172,6 +128,55 @@ class FTGMod {
             document.querySelector('app-gamecontent'),
             {subtree: true, childList: true }
         );
+    }
+
+    setupDom() {
+        var csselem = document.createElement("link");
+        csselem.setAttribute("rel", "stylesheet");
+        csselem.setAttribute("type", "text/css");
+        csselem.setAttribute("href", "https://countto25.github.io/QueslarQQOL/cssfix.css");
+        document.getElementsByTagName("head")[0].appendChild(csselem);
+
+        let QQOLholder = document.createElement('div');
+        QQOLholder.id = 'QQOL_holder';
+        QQOLholder.style.marginTop = '10px';
+        document.getElementById('profile-next-level').parentNode.appendChild(QQOLholder, null);
+
+        let QQOLinfo = document.createElement('div');
+        QQOLinfo.id='QQOL_info';
+        QQOLinfo.innerHTML = '<mat-icon class="mat-icon material-icons" style="vertical-align: bottom: height: 16px; width: 16px; font-size: 16px">settings</mat-icon><span id="toSettings" class="QQOL-link-action">QQOL v'+this.ver+'</span>';
+
+        let idletimeremainingtooltip = document.createElement('div');
+        idletimeremainingtooltip.id='QQOL_remaining_time';
+        idletimeremainingtooltip.innerHTML = "";
+        idletimeremainingtooltip.style.display = 'none';
+
+        let timetoleveluptooltip = document.createElement('div');
+        timetoleveluptooltip.id = 'QQOL_time_to_levelup';
+        timetoleveluptooltip.innerHTML = "";
+        timetoleveluptooltip.style.display = 'none';
+
+        let QQOLquests = document.createElement('div');
+        QQOLquests.id='QQOL_quests';
+        QQOLquests.innerHTML = 'Loading...';
+        QQOLquests.style.display = 'none';
+
+        let QQOLTimeToTargetLevel = document.createElement('div');
+        QQOLTimeToTargetLevel.id='QQOL_TTTL';
+        QQOLTimeToTargetLevel.innerHTML = '';
+        QQOLTimeToTargetLevel.style.display = 'none';
+
+        let QQOLkdexp = document.createElement('div');
+        QQOLkdexp.id='QQOL_kingdomexploration_div';
+        QQOLkdexp.innerHTML = '';
+        QQOLkdexp.style.display = 'none';
+
+        document.getElementById('QQOL_holder').appendChild(QQOLinfo);
+        document.getElementById('QQOL_holder').appendChild(idletimeremainingtooltip);
+        document.getElementById('QQOL_holder').appendChild(timetoleveluptooltip);
+        document.getElementById('QQOL_holder').appendChild(QQOLquests);
+        document.getElementById('QQOL_holder').appendChild(QQOLTimeToTargetLevel);
+        document.getElementById('QQOL_holder').appendChild(QQOLkdexp);
     }
 
   CheckLatestVersion() {
@@ -567,21 +572,6 @@ class FTGMod {
 
   }
 
-  AdvanceFromCurrent(exp) {
-    let projectedLevel = this.gameData.playerLevelsService.battling.level;
-    while (exp > 0) {
-      let expToLevel = Math.round(25000 * Math.pow(projectedLevel, 0.5));
-      let levelTemp = projectedLevel;
-      while (levelTemp > 1500) {
-        expToLevel +=  250 * Math.pow((levelTemp - 1500), 1.25)
-        levelTemp -= 1500;
-      }
-      projectedLevel++;
-      exp-=expToLevel;
-    }
-    return projectedLevel;
-  }
- }
 
 
 //TY GREASEMONKEY
