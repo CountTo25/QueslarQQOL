@@ -18,7 +18,7 @@
 ////
 
 
-//0.63
+//0.64
 // rootElement.playerCurrencyService.gem_fragments
 //
 
@@ -27,7 +27,7 @@
 
 class FTGMod {
  constructor() {
-   this.ver = '0.63';
+   this.ver = '0.64';
    //OBSERVERS
    var modbody = this;
    this.serviceOrders = {};
@@ -175,7 +175,6 @@ class FTGMod {
  Update() {
    this.TimeRemaining();
    this.TimeToLevelUp();
-   this.TrySearchProviderUI();
    this.TimeToQuestComplete();
    this.ReflectTimeToTargetLevel();
    this.explorationTimer();
@@ -391,21 +390,6 @@ class FTGMod {
    let div = document.getElementById('QQOL_TTTL');
    if (!div) return;
    div.innerHTML = this.TimeToTargetLevel();
- }
-
- TrySearchProviderUI() {
-   if (document.querySelector('.cdk-column-username.mat-column-username')&&!(document.getElementById('QQOL_service_search'))) {
-     if (this.currentTab == 'enchanting' || this.currentTab == 'crafting') {
-       let serviceSearchBar = document.createElement('input');
-       serviceSearchBar.id = 'QQOL_service_search';
-       serviceSearchBar.placeholder='Find service provider by name';
-       serviceSearchBar.classList.add('QQOL-searchbar');
-       serviceSearchBar.addEventListener('input', ()=>{this.FindProvider()});
-       let insertBefore = document.querySelector('.mat-table.cdk-table.mat-elevation-z8');
-       insertBefore.parentNode.insertBefore(serviceSearchBar,insertBefore)
-    }
-   }
-   //on services tab
  }
 
  FindProvider() {
